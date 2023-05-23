@@ -1,0 +1,10 @@
+services:
+  db:
+    image: postgres
+    restart: always
+    ports:
+      - '5434:5432'
+    environment:
+      POSTGRES_PASSWORD: when_to_process
+
+ 

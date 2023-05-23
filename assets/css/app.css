@@ -1,0 +1,21 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+/* This file is for your main application CSS */
+
+#map { height: 180px; }
+
+.leaflet-div-icon {
+  text-align: center;
+  line-height: 40px;
+  font-size: 25px;
+  background: rgba(255, 255, 255, 0.6);
+
+  box-shadow: 0 0 8px 8px rgba(255, 255, 255, 0.6);
+
+
+
+  border: 0px;
+  border-radius: 1em; 
+}
