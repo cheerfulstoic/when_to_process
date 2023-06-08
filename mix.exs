@@ -60,8 +60,14 @@ defmodule WhenToProcess.MixProject do
       {:ex_machina, "~> 2.7.0", only: :test},
       {:geocalc, "~> 0.8"},
       {:ecto_require_associations, "~> 0.1.3"},
-      {:mix_test_watch, "~> 1.0", only: [:dev, :test], runtime: false}
-
+      {:mix_test_watch, "~> 1.0", only: [:dev, :test], runtime: false},
+      {:slipstream, "~> 1.0"},
+      {:phoenix_client, "~> 0.3"},
+      {:httpoison, "~> 2.0"},
+      {:mint_web_socket, "~> 1.0"},
+      {:ex2ms, "~> 1.6.1"},
+      {:telemetry_metrics_statsd, "~> 0.6.0"},
+      {:prom_ex, "~> 1.8.0"}
     ]
   end
 

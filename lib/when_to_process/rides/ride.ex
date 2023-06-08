@@ -15,6 +15,11 @@ defmodule WhenToProcess.Rides.Ride do
     timestamps()
   end
 
+  def changeset_for_insert(attrs) do
+    %__MODULE__{}
+    |> changeset(attrs)
+  end
+
   @doc false
   def changeset(ride, attrs) do
     ride

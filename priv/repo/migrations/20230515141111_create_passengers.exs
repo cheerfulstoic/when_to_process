@@ -3,6 +3,8 @@ defmodule WhenToProcess.Repo.Migrations.CreatePassengers do
 
   def change do
     create table(:passengers) do
+      add :uuid, :uuid, null: false
+
       add :name, :string, null: false
 
       add :latitude, :float

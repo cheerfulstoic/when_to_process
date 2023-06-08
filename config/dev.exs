@@ -9,7 +9,12 @@ config :when_to_process, WhenToProcess.Repo,
   database: "when_to_process_dev",
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
-  pool_size: 10
+  pool_size: 10,
+  queue_target: 200,
+  # So that we don't get database queries during testing of
+  # non-DB strategies
+  migration_lock: nil
+
 
 # For development, we disable any cache and enable
 # debugging and code reloading.
@@ -22,7 +27,9 @@ config :when_to_process, WhenToProcessWeb.Endpoint,
   # Change to `ip: {0, 0, 0, 0}` to allow access from other machines.
   http: [ip: {127, 0, 0, 1}, port: 4000],
   check_origin: false,
-  code_reloader: true,
+  # TEMP FOR TESTING
+  # code_reloader: true,
+  code_reloader: false,
   debug_errors: true,
   secret_key_base: "3P3Tx7jz8BL7Ypo5634FpsfqgWQcBDsj6zZsq7JfwBMkLYdKWZPKwpm0B28kcHwQ",
   watchers: [
@@ -79,3 +86,4 @@ config :phoenix, :plug_init_mode, :runtime
 
 # Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false
+

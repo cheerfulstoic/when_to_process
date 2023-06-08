@@ -12,6 +12,9 @@ defmodule WhenToProcessWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+
+    post "/drivers", WhenToProcessWeb.DriverController, :create
+    post "/setup_drivers/:count", WhenToProcessWeb.DriverController, :setup_drivers
   end
 
   scope "/", WhenToProcessWeb do

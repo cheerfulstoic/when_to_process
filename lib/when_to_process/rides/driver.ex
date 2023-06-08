@@ -5,6 +5,7 @@ defmodule WhenToProcess.Rides.Driver do
   alias WhenToProcess.Rides.Ride
 
   schema "drivers" do
+    field :uuid, Ecto.UUID
     field :name, :string
 
     field :latitude, :float
@@ -14,6 +15,11 @@ defmodule WhenToProcess.Rides.Driver do
     has_one :current_ride, Ride, where: [dropped_off: nil]
 
     timestamps()
+  end
+
+  def changeset_for_insert(attrs) do
+    %__MODULE__{}
+    |> changeset(Map.put(attrs, :uuid, Ecto.UUID.generate()))
   end
 
   @doc false
@@ -27,7 +33,7 @@ defmodule WhenToProcess.Rides.Driver do
       end
 
     driver
-    |> cast(attrs, [:name, :latitude, :longitude, :ready_for_passengers])
-    |> validate_required([:name, :latitude, :longitude, :ready_for_passengers])
+    |> cast(attrs, [:uuid, :name, :latitude, :longitude, :ready_for_passengers])
+    |> validate_required([:uuid, :name, :latitude, :longitude, :ready_for_passengers])
   end
 end

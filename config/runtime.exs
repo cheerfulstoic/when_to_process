@@ -20,7 +20,46 @@ if System.get_env("PHX_SERVER") do
   config :when_to_process, WhenToProcessWeb.Endpoint, server: true
 end
 
+if System.get_env("LOG_LEVEL") do
+  config :logger, level: String.to_atom(System.get_env("LOG_LEVEL"))
+end
+
+config :when_to_process, :client, http_base: "http://localhost:4000", ws_base: "ws://localhost:4000"
+# config :when_to_process, :client, http_base: "https://when-to-process.fly.dev", ws_base: "wss://when-to-process.fly.dev"
+
+# RIDES_IMPLEMENTATION_MODULE should be one of:
+#  WhenToProcess.Rides.ProcessesOnly
+#  WhenToProcess.Rides.ProcessesWithETS
+#  WhenToProcess.Rides.DB
+
+rides_implementation_module = System.get_env("RIDES_IMPLEMENTATION_MODULE")
+
+if rides_implementation_module do
+  config :when_to_process, WhenToProcess.Rides, implementation: String.to_atom("Elixir.#{rides_implementation_module}")
+else
+  raise "RIDES_IMPLEMENTATION_MODULE environment variable required!"
+end
+
+
 if config_env() == :prod do
+  {grafana_host, grafana_token} = {
+    System.get_env("GRAFANA_HOST"),
+    System.get_env("GRAFANA_TOKEN")
+  }
+  if grafana_host && grafana_token do
+    config :when_to_process, WhenToProcess.PromEx,
+      manual_metrics_start_delay: :no_delay,
+      grafana: [
+        host: grafana_host,
+        auth_token: grafana_token,
+        upload_dashboards_on_start: true,
+        folder_name: "WhenToProcess App Dashboards",
+        annotate_app_lifecycle: true
+      ]
+  else
+    IO.puts("GRAFANA_HOST AND/OR GRAFANA_TOKEN NOT SET!!")
+  end
+
   database_url =
     System.get_env("DATABASE_URL") ||
       raise """

@@ -3,6 +3,8 @@ defmodule WhenToProcessWeb.OverviewLive do
 
   alias WhenToProcess.Rides
 
+  alias WhenToProcessWeb.Components
+
   @impl true
   def mount(_params, _session, socket) do
     drivers =
@@ -16,8 +18,8 @@ defmodule WhenToProcessWeb.OverviewLive do
 
     {:ok,
      socket
-     |> stream(:drivers, drivers)
-     |> stream(:passengers, passengers)
+     |> stream(:drivers, drivers, dom_id: &("driver-#{&1.uuid}"))
+     |> stream(:passengers, passengers, dom_id: &("passenger-#{&1.uuid}"))
      |> assign(:city_position, WhenToProcess.Locations.city_position(:stockholm))}
   end
 
@@ -27,24 +29,22 @@ defmodule WhenToProcessWeb.OverviewLive do
     <div>
       <% {city_latitude, city_longitude} = @city_position %>
       <div
-        phx-update="stream"
-        class="px-4 mt-0 w-full h-[80vh]"
         phx-hook="Map"
+        class="px-4 mt-0 w-full h-[80vh]"
         id="city"
         data-latitude={city_latitude}
         data-longitude={city_longitude}
         data-zoom="12"
       >
-        <.driver_marker :for={{dom_id, driver} <- @streams.drivers} id={dom_id} driver={driver} />
-        <.passenger_marker
-          :for={{dom_id, passenger} <- @streams.passengers}
-          id={dom_id}
-          passenger={passenger}
-        />
+        <div id="markers" phx-update="stream">
+          <.live_component :for={{dom_id, driver} <- @streams.drivers} module={Components.Marker} id={dom_id} record={driver} />
+
+          <.live_component :for={{dom_id, passenger} <- @streams.passengers} module={Components.Marker} id={dom_id} record={passenger} />
+        </div>
 
         <div id="map-container" phx-update="ignore" class="w-full h-full">
           <div
-            id="the-map"
+            id="leaflet-map"
             class="z-0 overflow-hidden border border-gray-500 rounded-lg map w-full h-full"
           >
           </div>
@@ -55,9 +55,10 @@ defmodule WhenToProcessWeb.OverviewLive do
   end
 
   @impl true
-  def handle_info({:record_update, record}, socket) do
-    IO.puts("Record update!")
-    IO.inspect(record)
+  def handle_info({:record_updated, record}, socket) do
+    # IO.puts("OverviewLive - record_updated")
+
+    record = preload_for(record)
 
     case stream_key(record) do
       nil ->
@@ -66,15 +67,13 @@ defmodule WhenToProcessWeb.OverviewLive do
       stream_key ->
         {:noreply,
          socket
-         |> stream_delete(stream_key, record)
          |> stream_insert(stream_key, record, at: -1)}
     end
   end
 
   @impl true
   def handle_info({:record_created, record}, socket) do
-    IO.puts("Record created!")
-    IO.inspect(record)
+    # IO.puts("OverviewLive - record_created")
 
     case stream_key(record) do
       nil ->
@@ -87,6 +86,9 @@ defmodule WhenToProcessWeb.OverviewLive do
     end
   end
 
+  def preload_for(%Rides.Driver{} = driver) do
+    WhenToProcess.Repo.preload(driver, :current_ride)
+  end
   def preload_for(%Rides.Passenger{} = passenger) do
     WhenToProcess.Repo.preload(passenger, :ride_request)
   end

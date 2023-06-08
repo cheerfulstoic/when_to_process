@@ -9,8 +9,9 @@ defmodule WhenToProcessWeb.UserSocket do
   ## Channels
   # Uncomment the following line to define a "room:*" topic
   # pointing to the `WhenToProcessWeb.RoomChannel`:
-  #
-  # channel "room:*", WhenToProcessWeb.RoomChannel
+
+  channel "driver:*", WhenToProcessWeb.DriverChannel
+
   #
   # To create a channel file, use the mix task:
   #

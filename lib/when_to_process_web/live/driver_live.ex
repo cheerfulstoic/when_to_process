@@ -3,26 +3,33 @@ defmodule WhenToProcessWeb.DriverLive do
 
   alias WhenToProcess.Rides
 
+  alias WhenToProcessWeb.Components
+
   @impl true
   def mount(_params, _session, socket) do
+    IO.puts("MOUNT!")
+
     {:ok, driver} =
       if connected?(socket) do
+          IO.puts("CONNECTED")
         case WhenToProcess.Locations.random_location(:stockholm) do
           {:ok, position} ->
+        IO.puts("B!")
             Rides.create_driver(%{name: Faker.Person.En.name(), position: position})
 
             # Handle error
         end
       else
+          IO.puts("NOT CONNECTED")
         {:ok, nil}
       end
 
-    driver = WhenToProcess.Repo.preload(driver, :current_ride)
+    driver = preload_driver(driver)
 
-    IO.inspect(driver, label: :driver)
     if driver do
-      IO.puts("subscribing")
+      IO.puts("DriverLive subscribing")
       Phoenix.PubSub.subscribe(WhenToProcess.PubSub, "driver:#{driver.id}")
+      Phoenix.PubSub.subscribe(WhenToProcess.PubSub, "records:driver:#{driver.id}")
     end
 
     {:ok,
@@ -58,18 +65,18 @@ defmodule WhenToProcessWeb.DriverLive do
         <pre class="whitespace-pre-wrap"><%= inspect(@ride_request) %></pre>
 
         <div
-          class="px-4 mt-0 w-full h-[80vh]"
           phx-hook="Map"
+          class="px-4 mt-0 w-full h-[80vh]"
           id="city"
           data-latitude={city_latitude}
           data-longitude={city_longitude}
           data-zoom="12"
         >
-          <.driver_marker id="driver" driver={@driver} />
+          <.live_component module={Components.Marker} id="driver" record={@driver} />
 
           <div id="map-container" phx-update="ignore" class="w-full h-full">
             <div
-              id="the-map"
+              id="leaflet-map"
               class="z-0 overflow-hidden border border-gray-500 rounded-lg map w-full h-full"
             >
             </div>
@@ -155,7 +162,7 @@ defmodule WhenToProcessWeb.DriverLive do
   def handle_event("accept", %{}, socket) do
     ride = Rides.accept_ride_request(socket.assigns.ride_request, socket.assigns.driver)
 
-    driver = WhenToProcess.Repo.preload(socket.assigns.driver, :current_ride, force: true)
+    driver = preload_driver(socket.assigns.driver, force: true)
 
     {:noreply,
       socket
@@ -167,7 +174,7 @@ defmodule WhenToProcessWeb.DriverLive do
 
   @impl true
   def handle_event("reject", %{}, socket) do
-    ride = Rides.reject_ride_request(socket.assigns.ride_request, socket.assigns.driver)
+    _ride = Rides.reject_ride_request(socket.assigns.ride_request, socket.assigns.driver)
 
     {:noreply, assign(socket, :ride_request, nil)}
   end
@@ -177,5 +184,28 @@ defmodule WhenToProcessWeb.DriverLive do
     ride_request = WhenToProcess.Repo.preload(ride_request, :passenger)
 
     {:noreply, assign(socket, :ride_request, ride_request)}
+  end
+
+  def handle_info({:record_created, _}, socket) do
+    IO.puts("DriverLive_created_something")
+    {:noreply, socket}
+  end
+
+  # Should there be targetted broadcasts for just the driver?
+  def handle_info(
+    {:record_updated, %Rides.Driver{id: driver_id} = updated_driver},
+    %{assigns: %{driver: %{id: driver_id}}} = socket
+  ) do
+    IO.inspect(updated_driver, label: :DriverLive_updated_driver)
+    {:noreply, assign(socket, :driver, preload_driver(updated_driver))}
+  end
+
+  def handle_info({:record_updated, _}, socket) do
+    IO.puts("DriverLive_updated_something")
+    {:noreply, socket}
+  end
+
+  defp preload_driver(driver, opts \\ []) do
+    WhenToProcess.Repo.preload(driver, :current_ride, opts)
   end
 end

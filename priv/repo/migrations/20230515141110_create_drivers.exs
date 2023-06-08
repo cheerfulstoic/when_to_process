@@ -3,6 +3,8 @@ defmodule WhenToProcess.Repo.Migrations.CreateDrivers do
 
   def change do
     create table(:drivers) do
+      add :uuid, :uuid, null: false
+
       add :name, :string, null: false
       add :latitude, :float
       add :longitude, :float

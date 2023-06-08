@@ -20,8 +20,6 @@ config :when_to_process, WhenToProcessWeb.Endpoint,
   pubsub_server: WhenToProcess.PubSub,
   live_view: [signing_salt: "mjvB+Zye"]
 
-config :when_to_process, WhenToProcess.Rides, implementation: WhenToProcess.Rides.DB
-
 # Configures the mailer
 #
 # By default it uses the "Local" adapter which stores the emails
@@ -60,6 +58,8 @@ config :logger, :console,
 
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
+
+config :hackney, use_default_pool: false
 
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.

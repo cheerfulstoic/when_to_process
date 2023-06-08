@@ -31,6 +31,7 @@ defmodule WhenToProcess.Repo.Migrations.CreateRideRequests do
     create table(:rides) do
       add :driver_id, references(:drivers), null: false
 
+      add :picked_up, :naive_datetime, null: true
       add :dropped_off, :naive_datetime, null: true
 
       add :ride_request_id, references(:ride_requests), null: false

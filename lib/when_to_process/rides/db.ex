@@ -5,111 +5,71 @@ defmodule WhenToProcess.Rides.DB do
 
   alias WhenToProcess.Repo
   alias WhenToProcess.Rides
-  alias WhenToProcess.Rides.Ride
   alias WhenToProcess.Rides.Driver
   alias WhenToProcess.Rides.Passenger
   alias WhenToProcess.Rides.RideRequest
 
-  def create_driver(attrs \\ %{}) do
-    %Driver{}
-    |> Driver.changeset(attrs)
-    |> insert_changeset()
+  @impl Rides
+  def child_spec, do: nil
+
+  @impl Rides
+  def ready? do
+    WhenToProcess.Repo in Ecto.Repo.all_running()
   end
 
-  def create_passenger(attrs \\ %{}) do
-    %Passenger{}
-    |> Passenger.changeset(attrs)
-    |> insert_changeset()
+  @impl Rides
+  def list_drivers do
+    Repo.all(Driver)
   end
 
-  def set_position(driver, new_position) do
-    driver
-    |> Driver.changeset(%{position: new_position})
-    |> update_changeset()
+  @impl Rides
+  def count_drivers do
+    Repo.aggregate(Driver, :count)
   end
 
-  def go_online(driver) do
-    driver
-    |> Driver.changeset(%{ready_for_passengers: true})
-    |> update_changeset()
+  @impl Rides
+  def get_driver!(uuid), do: Repo.get_by!(Driver, uuid: uuid)
+
+  @impl Rides
+  def reload(record), do: Repo.reload(record)
+
+  @impl Rides
+  def available_drivers(position, count) do
+    position
+    |> nearby_drivers_q(2_000, count)
+    |> where([driver], driver.ready_for_passengers == true)
+    |> Repo.all()
   end
 
-  def no_more_passengers(driver) do
-    driver
-    |> Driver.changeset(%{ready_for_passengers: false})
-    |> update_changeset()
-  end
-
-  def request_ride(%Passenger{} = passenger) do
-    result =
-      passenger
-      |> Passenger.changeset(%{ride_request: %{}})
-      |> update_changeset()
-
-    with {:ok, passenger} <- result do
-      passenger
-      |> Rides.position()
-      # TODO: Only query for drivers which are ready_for_passengers = true
-      |> nearby_drivers(2_000, 3)
-      |> Enum.each(fn driver ->
-        IO.puts("broadcasting to driver #{driver.id}")
-        Phoenix.PubSub.broadcast(WhenToProcess.PubSub, "driver:#{driver.id}", {:new_ride_request, passenger.ride_request})
-      end)
-
-      {:ok, passenger}
-    end
-  end
-
-  def accept_ride_request(ride_request, driver) do
-    ride_request = Repo.reload(ride_request)
-
-    with :ok <- RideRequest.check_can_be_accepted(ride_request) do
-      %Ride{}
-      |> Ride.changeset(%{driver_id: driver.id, ride_request_id: ride_request.id})
-      |> Repo.insert()
-      |> case do
-        {:ok, ride} ->
-          Phoenix.PubSub.broadcast(WhenToProcess.PubSub, "passenger:#{ride_request.passenger_id}", {:ride_request_accepted, ride})
-
-          {:ok, ride}
-
-        {:error, failed_changeset} ->
-           {:error, error_from_changeset(failed_changeset)}
-      end
-    end
-  end
-
-  def reject_ride_request(ride_request, driver) do
+  @impl Rides
+  def reject_ride_request(_ride_request, _driver) do
     # TODO
+
+    nil
   end
 
-  defp error_from_changeset(failed_changeset) do
-    Enum.map(failed_changeset.errors, fn
-      {:base, {message, _opts}} ->
-        message
-
-      {field, {message, _opts}} ->
-        "#{field} #{message}"
-    end)
-    |> Enum.join(", ")
+  @impl Rides
+  def reset do
+    true
   end
 
-  defp nearby_drivers(position, radius, count) do
+  defp nearby_drivers_q(position, radius, count) do
     [
       [latitude_west, longitude_south],
       [latitude_east, longitude_north]
     ] = Geocalc.bounding_box(position, radius)
 
+    {latitude, longitude} = position
     from(
       driver in Driver,
       where: fragment("? BETWEEN ? AND ?", driver.latitude, ^latitude_west, ^latitude_east),
       where: fragment("? BETWEEN ? AND ?", driver.longitude, ^longitude_south, ^longitude_north),
-      order_by: fragment("pow(?, 2) + pow(?, 2)", driver.latitude, driver.longitude),
+      order_by: fragment("pow(? - ?, 2) + pow(? - ?, 2)", ^latitude, driver.latitude, ^longitude, driver.longitude),
       limit: ^count
     )
-    |> Repo.all()
   end
 
+  @impl Rides
   def cancel_request(%Passenger{} = passenger) do
     result =
       passenger.ride_request
@@ -120,35 +80,26 @@ defmodule WhenToProcess.Rides.DB do
       {:ok,
         passenger
         |> Repo.preload(:ride_request, force: true)
-        |> notify_of(:update)
+        |> WhenToProcess.PubSub.broadcast_record_update()
       }
     end
   end
 
-  defp insert_changeset(%Ecto.Changeset{} = changeset) do
+  @impl Rides
+  def insert_changeset(%Ecto.Changeset{} = changeset) do
     with {:ok, record} <- Repo.insert(changeset) do
-      notify_of(record, :create)
+      WhenToProcess.PubSub.broadcast_record_create(record)
 
       {:ok, record}
     end
   end
 
-  defp update_changeset(%Ecto.Changeset{} = changeset) do
+  @impl Rides
+  def update_changeset(%Ecto.Changeset{} = changeset) do
     with {:ok, record} <- Repo.update(changeset) do
-      notify_of(record, :update)
+      WhenToProcess.PubSub.broadcast_record_update(record)
 
       {:ok, record}
     end
-  end
-
-  defp notify_of(record, :update) do
-    Phoenix.PubSub.broadcast(WhenToProcess.PubSub, "records", {:record_update, record})
-
-    record
-  end
-  defp notify_of(record, :create) do
-    Phoenix.PubSub.broadcast(WhenToProcess.PubSub, "records", {:record_created, record})
-
-    record
   end
 end

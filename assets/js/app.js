@@ -1,6 +1,6 @@
 // If you want to use Phoenix channels, run `mix help phx.gen.channel`
 // to get started and then uncomment the line below.
-// import "./user_socket.js"
+import "./user_socket.js"
 
 // You can include dependencies in two ways.
 //
@@ -22,8 +22,8 @@ import {Socket} from "phoenix"
 import {LiveSocket} from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 
-let map_markers = {}
-let map;
+let map_markers = {};
+let map = L.map('leaflet-map');
 
 const iconSize = 50;
 
@@ -36,23 +36,20 @@ const markerPosition = (marker_element) => {
 
 const markerIcon = (marker_element) => {
   let type = marker_element.getAttribute('data-type'),
-      ready_for_passengers = marker_element.getAttribute('data-ready-for-passengers'),
-      engaged = marker_element.getAttribute('data-engaged'),
-      ride_requested = marker_element.getAttribute('data-ride-requested'),
+      metadata = JSON.parse(marker_element.getAttribute('data-metadata')),
       emoji;
 
   switch (type) {
     case 'driver':
-      if (engaged == "true") {
-        emoji = "🚕"
-      } else {
-        emoji = ready_for_passengers == "true" ? "🚙" : "🚗"
-      }
+      emoji = metadata.ready_for_passengers  ? "🚙" : "🚗";
       break;
 
     case 'passenger':
-      emoji = ride_requested == "true" ? "🕺" : "🧍"
+      emoji = metadata.ride_requested ? "🕺" : "🧍";
       break;
+
+    case 'ride':
+      emoji = "🚕";
   }
 
   return L.divIcon({
@@ -69,71 +66,92 @@ const newMarker = (marker_element) => {
   )
 }
 
-const show_map = (el) => {
+// const update_map = (el) => {
+//   let marker_elements = el.getElementsByClassName('marker')
+
+//   Array.from(marker_elements).forEach((marker_element) => {
+//     let id = marker_element.getAttribute('id');
+
+//     console.log({id})
+//     let position = markerPosition(marker_element);
+
+//     if (!map_markers[id]) {
+//       map_markers[id] = newMarker(marker_element);
+//       map_markers[id].addTo(map)
+//     } else {
+//       map_markers[id].setIcon(markerIcon(marker_element));
+//       map_markers[id].setLatLng(position);
+//     }
+//   })
+// }
+
+let Hooks = {}
+
+Hooks.Map = {
+  mounted() {
+    // console.log('map mounted')
+    let el = this.el;
+
+    // console.log('show_map')
+
     let latitude = el.getAttribute('data-latitude')
     let longitude = el.getAttribute('data-longitude')
     let zoom = el.getAttribute('data-zoom')
 
-    let [map_el] = el.getElementsByClassName('map')
+    // let map_el = el.getElementById('leaflet-map')
 
-    let marker_elements = el.getElementsByClassName('marker')
+    // if (map_el) {
+    //     // reset the map div
+    //     map_el._leaflet_id = null;
+    // }
 
-    if (map_el) {
-        // reset the map div
-        map_el._leaflet_id = null;
-    }
-
-    if (map_el && latitude && longitude) {
+    // if (map_el && latitude && longitude) {
+    if (latitude && longitude) {
         latitude = parseFloat(latitude)
         longitude = parseFloat(longitude)
-        map = L.map(map_el)
+      // console.log('created map')
         map.setView([latitude, longitude], zoom);
 
         L.tileLayer('http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
             subdomains: ['a', 'b', 'c']
         }).addTo(map);
-
-        Array.from(marker_elements).forEach((marker_element) => {
-          let id = marker_element.getAttribute('id');
-
-          map_markers[id] = newMarker(marker_element);
-          map_markers[id].addTo(map);
-        })
     }
+  },
+  // updated() {
+  //   update_map(this.el)
+  // }
 }
 
-const update_map = (el) => {
-  let marker_elements = el.getElementsByClassName('marker')
-
-  Array.from(marker_elements).forEach((marker_element) => {
+Hooks.Marker = {
+  mounted() {
+    // console.log('marker mounted')
+    let marker_element = this.el;
     let id = marker_element.getAttribute('id');
 
-    console.log({id})
-    let position = markerPosition(marker_element);
+    // console.log({marker_element})
+    map_markers[id] = newMarker(marker_element);
+    // console.log('adding to map')
+    map_markers[id].addTo(map);
 
-    if (!map_markers[id]) {
-      map_markers[id] = newMarker(marker_element);
-      map_markers[id].addTo(map)
-    } else {
-      map_markers[id].setIcon(markerIcon(marker_element));
-      map_markers[id].setLatLng(position);
-    }
-  })
+  },
+  updated() {
+    // console.log('marker updated')
+    let marker_element = this.el;
+    let id = marker_element.getAttribute('id');
+
+    map_markers[id].setIcon(markerIcon(marker_element));
+    // console.log({position: markerPosition(marker_element)})
+    map_markers[id].setLatLng(markerPosition(marker_element));
+  },
+  destroyed() {
+    // console.log('marker destroyed')
+    let marker_element = this.el;
+    let id = marker_element.getAttribute('id');
+
+    map_markers[id].remove()
+  }
 }
-
-let Hooks = {}
-
-Hooks.Map = {
-    mounted() {
-        show_map(this.el)
-
-    },
-    updated() {
-        update_map(this.el)
-    }
-}
-
 
 let csrfToken = document.querySelector("meta[name='csrf-token']").getAttribute("content")
 let liveSocket = new LiveSocket("/live", Socket, {hooks: Hooks, params: {_csrf_token: csrfToken}})

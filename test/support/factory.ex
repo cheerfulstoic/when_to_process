@@ -5,13 +5,19 @@ defmodule WhenToProcess.Factory do
 
   def driver_factory do
     %Rides.Driver{
-      name: Faker.Person.En.name()
+      uuid: Ecto.UUID.generate(),
+      name: Faker.Person.En.name(),
+      latitude: generate_latitude(),
+      longitude: generate_longitude()
     }
   end
 
   def passenger_factory do
     %Rides.Passenger{
-      name: Faker.Person.En.name()
+      uuid: Ecto.UUID.generate(),
+      name: Faker.Person.En.name(),
+      latitude: generate_latitude(),
+      longitude: generate_longitude()
     }
   end
 
@@ -26,5 +32,13 @@ defmodule WhenToProcess.Factory do
       driver: build(:driver),
       ride_request: build(:ride_request)
     }
+  end
+
+  defp generate_latitude do
+    (:rand.uniform() * 180) - 90
+  end
+
+  defp generate_longitude do
+    (:rand.uniform() * 360) - 180
   end
 end

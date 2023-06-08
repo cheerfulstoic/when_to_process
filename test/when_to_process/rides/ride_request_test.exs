@@ -25,7 +25,6 @@ defmodule WhenToProcess.Rides.RideRequestTest do
       insert(:ride_request, passenger: passenger)
 
       {:error, %Ecto.Changeset{errors: changeset_errors}} =
-      result =
         %RideRequest{}
         |> RideRequest.changeset(%{passenger_id: passenger.id})
         |> WhenToProcess.Repo.insert()

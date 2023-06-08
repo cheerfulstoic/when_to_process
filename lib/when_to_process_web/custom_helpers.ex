@@ -23,6 +23,17 @@ defmodule WhenToProcessWeb.CustomHelpers do
     """
   end
 
+  attr :id, :string, required: true
+  attr :ride, Rides.Ride, required: true
+
+  def ride_marker(assigns) do
+    EctoRequireAssociations.ensure!(assigns.ride, :driver)
+
+    assigns
+    |> Map.put(:driver, Map.put(assigns.ride.driver, :current_ride, assigns.ride))
+    |> driver_marker()
+  end
+
   def passenger_marker(assigns) do
     EctoRequireAssociations.ensure!(assigns.passenger, [:ride_request])
 

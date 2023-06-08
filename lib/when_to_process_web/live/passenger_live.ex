@@ -3,8 +3,11 @@ defmodule WhenToProcessWeb.PassengerLive do
 
   alias WhenToProcess.Rides
 
+  alias WhenToProcessWeb.Components
+
   @impl true
   def mount(_params, _session, socket) do
+    # IO.inspect(socket.assigns, label: :da_assigns)
     {:ok, passenger} =
       if connected?(socket) do
         case WhenToProcess.Locations.random_location(:stockholm) do
@@ -19,13 +22,12 @@ defmodule WhenToProcessWeb.PassengerLive do
     passenger = WhenToProcess.Repo.preload(passenger, [:ride_request, current_ride: :driver])
 
     if passenger do
-      IO.puts("subscribing")
+      # IO.puts("PassengerLive subscribing")
       Phoenix.PubSub.subscribe(WhenToProcess.PubSub, "passenger:#{passenger.id}")
     end
 
     {:ok,
      socket
-     |> assign(:ride, nil)
      |> assign(:passenger, passenger)
      |> assign(:city_position, WhenToProcess.Locations.city_position(:stockholm))}
   end
@@ -42,6 +44,9 @@ defmodule WhenToProcessWeb.PassengerLive do
           <.button phx-click="cancel-request">Cancel Request</.button>
         <% end %>
 
+        <%= if @passenger.current_ride do %>
+          <strong><%= @passenger.current_ride.driver.name %></strong> has accepted your request for a ride.
+        <% end %>
         <div
           class="px-4 mt-0 w-full h-[80vh]"
           phx-hook="Map"
@@ -50,19 +55,19 @@ defmodule WhenToProcessWeb.PassengerLive do
           data-longitude={city_longitude}
           data-zoom="12"
         >
-          <.passenger_marker passenger={@passenger} />
-          <.driver_marker :if={@passenger.current_ride} passenger={@passenger.current_ride.driver} />
+          <.live_component :if={@passenger.current_ride} module={Components.Marker} id="ride" record={@passenger.current_ride} />
+
+          <.live_component :if={!@passenger.current_ride} module={Components.Marker} id="passenger" record={@passenger} />
 
           <div id="map-container" phx-update="ignore" class="w-full h-full">
             <div
-              id="the-map"
+              id="leaflet-map"
               class="z-0 overflow-hidden border border-gray-500 rounded-lg map w-full h-full"
             >
             </div>
           </div>
         </div>
-        <pre class="whitespace-pre-wrap"><%= inspect(@passenger) %></pre>
-        <pre class="whitespace-pre-wrap"><%= inspect(@ride) %></pre>
+        <pre class="whitespace-pre-wrap"><%= inspect(@passenger.current_ride) %></pre>
       <% else %>
         <p class="p-4 text-lg text-center text-orange-600">
           Sorry we are unable to display the map
@@ -100,6 +105,33 @@ defmodule WhenToProcessWeb.PassengerLive do
       socket.assigns.passenger
       |> WhenToProcess.Repo.preload([current_ride: :driver], force: true)
 
+    # IO.puts("Subscribing to driver updates for ##{passenger.current_ride.driver.id}")
+    Phoenix.PubSub.subscribe(WhenToProcess.PubSub, "records:driver:#{passenger.current_ride.driver.id}")
+
     {:noreply, assign(socket, :passenger, passenger)}
+  end
+
+  def handle_info({:record_created, _}, socket), do: {:noreply, socket}
+
+  # Should there be targetted broadcasts for just the passenger?
+  def handle_info(
+    {:record_updated, %Rides.Passenger{id: passenger_id} = updated_passenger},
+    %{assigns: %{passenger: %{id: passenger_id}}} = socket
+  ) do
+    # IO.inspect(updated_passenger, label: :PassengerLive_updated_passenger)
+    {:noreply, assign(socket, :passenger, updated_passenger)}
+  end
+
+  def handle_info(
+    {:record_updated, %Rides.Driver{id: driver_id} = updated_driver},
+    %{assigns: %{passenger: %{current_ride: %{driver: %{id: driver_id}}} = passenger}} = socket
+  ) do
+    # IO.inspect(updated_driver, label: :PassengerLive_updated_driver)
+    {:noreply, assign(socket, :passenger, put_in(passenger.current_ride.driver, updated_driver))}
+  end
+
+  def handle_info({:record_updated, _}, socket) do
+    # IO.inspect("PassengerLive: update message")
+    {:noreply, socket}
   end
 end
