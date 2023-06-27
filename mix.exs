@@ -65,7 +65,7 @@ defmodule WhenToProcess.MixProject do
       {:httpoison, "~> 2.0"},
       {:mint_web_socket, "~> 1.0"},
       {:ex2ms, "~> 1.6.1"},
-      {:telemetry_metrics_statsd, "~> 0.6.0"},
+      {:telemetry_metrics_statsd, github: "cheerfulstoic/telemetry_metrics_statsd"},
       {:prom_ex, "~> 1.8.0"},
       {:cowboy_telemetry, "~> 0.4.0"},
 
