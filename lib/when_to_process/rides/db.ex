@@ -1,6 +1,4 @@
 defmodule WhenToProcess.Rides.DB do
-  @behaviour WhenToProcess.Rides
-
   import Ecto.Query
 
   alias WhenToProcess.Repo
@@ -9,64 +7,55 @@ defmodule WhenToProcess.Rides.DB do
   alias WhenToProcess.Rides.Passenger
   alias WhenToProcess.Rides.RideRequest
 
-  @impl Rides
-  def child_spec, do: nil
+  @behaviour Rides.State
+  @behaviour Rides.GlobalState
+  @behaviour Rides.IndividualState
 
-  @impl Rides
-  def ready? do
+  @impl Rides.State
+  def child_spec(_record_module), do: nil
+
+  @impl Rides.State
+  def ready?(_record_module) do
     WhenToProcess.Repo in Ecto.Repo.all_running()
   end
 
-  @impl Rides
-  def list_drivers do
-    Repo.all(Driver)
+  @impl Rides.GlobalState
+  def list(record_module), do: Repo.all(record_module)
+
+  @impl Rides.GlobalState
+  def count(record_module) do
+    Repo.aggregate(record_module, :count)
   end
 
-  @impl Rides
-  def count_drivers do
-    Repo.aggregate(Driver, :count)
-  end
+  @impl Rides.IndividualState
+  def get(record_module, uuid), do: Repo.get_by(record_module, uuid: uuid)
 
-  @impl Rides
-  def get_driver!(uuid), do: Repo.get_by!(Driver, uuid: uuid)
-
-  @impl Rides
+  @impl Rides.IndividualState
   def reload(record), do: Repo.reload(record)
 
-  @impl Rides
-  def available_drivers(position, count) do
-    position
-    |> nearby_drivers_q(2_000, count)
-    |> where([driver], driver.ready_for_passengers == true)
-    |> Repo.all()
+  @impl Rides.State
+  def reset(_record_module) do
+    :ok
   end
 
-  @impl Rides
-  def reject_ride_request(_ride_request, _driver) do
-    # TODO
-
-    nil
-  end
-
-  @impl Rides
-  def reset do
-    true
-  end
-
-  defp nearby_drivers_q(position, radius, count) do
+  @impl Rides.GlobalState
+  def list_nearby(record_module, position, distance, filter_fn, count) do
     [
       [latitude_west, longitude_south],
       [latitude_east, longitude_north]
-    ] = Geocalc.bounding_box(position, radius)
+    ] = Geocalc.bounding_box(position, distance)
 
     {latitude, longitude} = position
+
     from(
-      driver in Driver,
+      driver in record_module,
       where: fragment("? BETWEEN ? AND ?", driver.latitude, ^latitude_west, ^latitude_east),
       where: fragment("? BETWEEN ? AND ?", driver.longitude, ^longitude_south, ^longitude_north),
       order_by: fragment("pow(? - ?, 2) + pow(? - ?, 2)", ^latitude, driver.latitude, ^longitude, driver.longitude),
       limit: ^count
     )
+    |> Repo.all()
+    |> Enum.filter(filter_fn)
   end
 
   @impl Rides
@@ -85,7 +74,7 @@ defmodule WhenToProcess.Rides.DB do
     end
   end
 
-  @impl Rides
+  @impl Rides.State
   def insert_changeset(%Ecto.Changeset{} = changeset) do
     with {:ok, record} <- Repo.insert(changeset) do
       WhenToProcess.PubSub.broadcast_record_create(record)
@@ -94,7 +83,7 @@ defmodule WhenToProcess.Rides.DB do
     end
   end
 
-  @impl Rides
+  @impl Rides.State
   def update_changeset(%Ecto.Changeset{} = changeset) do
     with {:ok, record} <- Repo.update(changeset) do
       WhenToProcess.PubSub.broadcast_record_update(record)

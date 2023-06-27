@@ -18,7 +18,12 @@ config :when_to_process, WhenToProcessWeb.Endpoint,
     layout: false
   ],
   pubsub_server: WhenToProcess.PubSub,
-  live_view: [signing_salt: "mjvB+Zye"]
+  adapter: Bandit.PhoenixAdapter,
+  live_view: [signing_salt: "mjvB+Zye"] # ,
+  # http: [
+  #   stream_handlers: [:cowboy_telemetry_h, :cowboy_stream_h],
+  #   transport_options: [num_acceptors: 5_000, max_connections: :infinity]
+  # ]
 
 # Configures the mailer
 #

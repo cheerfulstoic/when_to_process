@@ -6,7 +6,8 @@ defmodule WhenToProcess.ProcessTelemetry do
   end
 
   def monitor(pid, module) do
-    GenServer.cast(__MODULE__, {:monitor, pid, module})
+    # Disabled Temporarily (?)
+    # GenServer.cast(__MODULE__, {:monitor, pid, module})
   end
 
   @impl true
@@ -25,7 +26,14 @@ defmodule WhenToProcess.ProcessTelemetry do
   end
 
   @impl true
-  def handle_info({:DOWN, ref, :process, _object, reason}, modules_by_ref) do
+  def handle_info({:DOWN, ref, :process, _object, reason} = tuple, modules_by_ref) do
+    if reason != {:shutdown, :peer_closed} do
+      module = Map.get(modules_by_ref, ref)
+
+      IO.inspect(module, label: :DOWN!)
+      IO.inspect(tuple, label: :DOWN!)
+    end
+
     if reason not in [:noproc] do
       module = Map.get(modules_by_ref, ref)
 

@@ -14,6 +14,8 @@ defmodule WhenToProcessWeb.Router do
     plug :accepts, ["json"]
 
     post "/drivers", WhenToProcessWeb.DriverController, :create
+    post "/passengers", WhenToProcessWeb.PassengerController, :create
+    get "/drivers/wait", WhenToProcessWeb.DriverController, :wait
     post "/setup_drivers/:count", WhenToProcessWeb.DriverController, :setup_drivers
   end
 

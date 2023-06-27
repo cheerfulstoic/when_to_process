@@ -15,7 +15,7 @@ defmodule WhenToProcess.RidesFixtures do
         longitude: 120.5,
         ready_for_passengers: true
       })
-      |> WhenToProcess.Rides.create_driver()
+      |> WhenToProcess.Rides.create(Rides.Driver)
 
     driver
   end

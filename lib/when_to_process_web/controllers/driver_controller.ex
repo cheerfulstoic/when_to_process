@@ -4,7 +4,7 @@ defmodule WhenToProcessWeb.DriverController do
   alias WhenToProcess.Rides
 
   def create(conn, _params) do
-    WhenToProcess.ProcessTelemetry.monitor(self(), __MODULE__)
+    # WhenToProcess.ProcessTelemetry.monitor(self(), __MODULE__)
 
     {:ok, driver} = create_new_driver()
 
@@ -12,10 +12,10 @@ defmodule WhenToProcessWeb.DriverController do
   end
 
   def setup_drivers(conn, %{"count" => count}) do
-    WhenToProcess.ProcessTelemetry.monitor(self(), __MODULE__)
+    # WhenToProcess.ProcessTelemetry.monitor(self(), __MODULE__)
 
     IO.inspect(count, label: :count)
-    drivers = Rides.list_drivers()
+    drivers = Rides.list(Rides.Driver)
 
     count = String.to_integer(count)
     drivers =
@@ -32,10 +32,17 @@ defmodule WhenToProcessWeb.DriverController do
     json(conn, Enum.map(drivers, & %{uuid: &1.uuid}))
   end
 
+  # Test action
+  def wait(conn, %{}) do
+    Process.sleep(2_000)
+
+    json(conn, %{})
+  end
+
   defp create_new_driver do
     case WhenToProcess.Locations.random_location(:stockholm) do
       {:ok, position} ->
-        Rides.create_driver(%{name: Faker.Person.En.name(), position: position})
+        Rides.create(Rides.Driver, %{name: Faker.Person.En.name(), position: position})
     end
   end
 end

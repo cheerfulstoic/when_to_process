@@ -8,10 +8,10 @@ defmodule WhenToProcessWeb.OverviewLive do
   @impl true
   def mount(_params, _session, socket) do
     drivers =
-      Rides.list_drivers()
+      Rides.list(Rides.Driver)
       |> WhenToProcess.Repo.preload(:current_ride)
     passengers =
-      Rides.list_passengers()
+      Rides.list(Rides.Passenger)
       |> WhenToProcess.Repo.preload(:ride_request)
 
     Phoenix.PubSub.subscribe(WhenToProcess.PubSub, "records")

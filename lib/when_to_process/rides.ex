@@ -4,7 +4,6 @@ defmodule WhenToProcess.Rides do
   """
 
   import Ecto.Query, warn: false
-  alias WhenToProcess.Repo
 
   alias WhenToProcess.Rides.Driver
   alias WhenToProcess.Rides.Passenger
@@ -14,56 +13,49 @@ defmodule WhenToProcess.Rides do
   @type uuid :: Ecto.UUID.t()
   @type position :: {float(), float()}
 
-  @callback child_spec() :: Supervisor.child_spec() | nil
-  @callback ready?() :: boolean()
-  @callback reset() :: boolean()
+  def child_specs do
+    state_implementation_modules()
+    |> Enum.flat_map(fn module ->
+      [module.state_child_spec(Driver), module.state_child_spec(Passenger)]
+    end)
+    |> Enum.reject(&is_nil/1)
+    |> Enum.uniq()
+  end
+  def ready?() do
+    state_implementation_modules()
+    |> Enum.all?(fn module ->
+      module.ready?(Driver) &&
+      module.ready?(Passenger)
+    end)
+  end
 
-  @callback list_drivers() :: [Driver.t()]
+  def list(module), do: global_state_implementation_module().list(module)
 
-  @callback insert_changeset(Ecto.Changeset.t()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
-  @callback update_changeset(Ecto.Changeset.t()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
-
-  @callback count_drivers() :: integer()
-
-  @callback get_driver!(uuid()) :: Driver.t() | nil
-
-  @callback reload(term()) :: [term()]
-
-  @callback reject_ride_request(RideRequest.t(), Driver.t()) :: {:ok, RideRequest.t()} | {:error, Ecto.Changeset.t()}
-
-  @callback available_drivers(position(), integer()) :: [Driver.t()]
-  @callback cancel_request(Passenger.t()) :: {:ok, Passenger.t()} | {:error, Ecto.Changeset.t()}
-
-  def child_spec, do: implementation_module().child_spec()
-  def ready?, do: implementation_module().ready?()
-
-  def list_drivers, do: implementation_module().list_drivers()
-
-  def create_driver(attrs) do
+  def create(module, attrs \\ %{}) do
     attrs
-    |> Driver.changeset_for_insert()
-    |> implementation_module().insert_changeset()
+    |> module.changeset_for_insert()
+    |> then(fn changeset ->
+      state_implementation_modules()
+      |> Enum.map(& &1.insert_changeset(changeset))
+      |> List.last()
+    end)
   end
 
-  def count_drivers do
-    implementation_module().count_drivers()
+  def count(module) do
+    global_state_implementation_module().count(module)
   end
 
-  def create_ride(attrs) do
-    attrs
-    |> Ride.changeset_for_insert()
-    |> implementation_module().insert_changeset()
+  def get!(module, uuid) do
+    with nil <- get(module, uuid) do
+      raise "Could not found #{module} `#{uuid}`"
+    end
   end
 
-  def create_passenger(attrs) do
-    attrs
-    |> Passenger.changeset_for_insert()
-    |> implementation_module().insert_changeset()
+  def get(module, uuid) do
+    individual_state_implementation_module().get(module, uuid)
   end
 
-  def get_driver!(uuid), do: implementation_module().get_driver!(uuid)
-
-  def reload(record), do: implementation_module().reload(record)
+  def reload(record), do: global_state_implementation_module().reload(record)
 
   def set_position(driver, new_position) do
     update_record(driver, %{position: new_position})
@@ -77,14 +69,16 @@ defmodule WhenToProcess.Rides do
     update_record(driver, %{ready_for_passengers: false})
   end
 
-  def reject_ride_request(ride_request, driver), do: implementation_module().reject_ride_request(ride_request, driver)
+  def reject_ride_request(ride_request, driver), do: global_state_implementation_module().reject_ride_request(ride_request, driver)
 
   # Exists to allow tests to reset state
-  def reset(), do: implementation_module().reset()
+  def reset() do
+    global_state_implementation_module().reset(Driver)
+    global_state_implementation_module().reset(Passenger)
+  end
 
   # Passenger actions
 
-  # TODO: Test this function (available_drivers already tested)
   @spec request_ride(Passenger.t()) :: {:ok, Passenger.t()} | {:error, Ecto.Changeset.t()}
   def request_ride(passenger) do
     EctoRequireAssociations.ensure!(passenger, [:ride_request])
@@ -92,10 +86,7 @@ defmodule WhenToProcess.Rides do
     result = update_record(passenger, %{ride_request: %{}})
 
     with {:ok, passenger} <- result do
-      passenger
-      |> position()
-      |> implementation_module().available_drivers(3)
-      |> Repo.all()
+      global_state_implementation_module().list_nearby(Driver, position(passenger), 2_000, (& &1.ready_for_passengers), 3)
       |> Enum.each(fn driver ->
         # IO.puts("broadcasting to driver #{driver.id}")
         WhenToProcess.PubSub.broadcast("driver:#{driver.id}", {:new_ride_request, passenger.ride_request})
@@ -107,7 +98,7 @@ defmodule WhenToProcess.Rides do
 
   @spec accept_ride_request(RideRequest.t(), Driver.t()) :: {:ok, RideRequest.t()} | {:error, Ecto.Changeset.t()}
   def accept_ride_request(ride_request, driver) do
-    ride_request = implementation_module().reload(ride_request)
+    ride_request = reload(ride_request)
 
     with :ok <- RideRequest.check_can_be_accepted(ride_request) do
       create_ride(%{driver_id: driver.id, ride_request_id: ride_request.id})
@@ -124,14 +115,17 @@ defmodule WhenToProcess.Rides do
     end
   end
 
-  def cancel_request(passenger), do: implementation_module().cancel_request(passenger)
+  def cancel_request(passenger), do: global_state_implementation_module().cancel_request(passenger)
 
-  defp implementation_module do
-    Application.get_env(:when_to_process, __MODULE__)[:implementation]
+  def create_ride(attrs) do
+    attrs
+    |> Ride.changeset_for_insert()
+    |> global_state_implementation_module().insert_changeset()
   end
 
-  def list_passengers do
-    Repo.all(Passenger)
+  # Just for use internally
+  def _global_state_implementation_module do
+    global_state_implementation_module()
   end
 
   def position(%{latitude: latitude, longitude: longitude}), do: {latitude, longitude}
@@ -157,6 +151,29 @@ defmodule WhenToProcess.Rides do
   defp update_record(%schema_mod{} = record, attrs) do
     record
     |> schema_mod.changeset(attrs)
-    |> implementation_module().update_changeset()
+    |> then(fn changeset ->
+      Enum.map(state_implementation_modules(), fn module ->
+        module.update_changeset(changeset)
+      end)
+      |> List.last()
+    end)
+  end
+
+  defp global_state_implementation_module do
+    config()[:global_state_implementation_module]
+  end
+
+  defp individual_state_implementation_module do
+    config()[:individual_state_implementation_module]
+  end
+
+  defp state_implementation_modules do
+    # It's important that the `global` module comes before the individual module
+    # The individual module may fetch the record from the global state, and so it needs to be there
+    Enum.uniq([global_state_implementation_module(), individual_state_implementation_module()])
+  end
+
+  defp config do
+    Application.get_env(:when_to_process, __MODULE__)
   end
 end

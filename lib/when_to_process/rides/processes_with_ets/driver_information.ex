@@ -3,6 +3,8 @@ defmodule WhenToProcess.Rides.ProcessesWithETS.DriverInformation do
 
   require Ex2ms
 
+  alias WhenToProcess.Rides
+
   def start_link(_) do
     GenServer.start_link(__MODULE__, nil, name: __MODULE__)
   end
@@ -27,7 +29,7 @@ defmodule WhenToProcess.Rides.ProcessesWithETS.DriverInformation do
     :ets.select_count(__MODULE__, ms)
   end
 
-  def top_ready_near(position, distance, count) do
+  def list_nearby(position, distance, count) do
     [
       [latitude_west, longitude_south],
       [latitude_east, longitude_north]

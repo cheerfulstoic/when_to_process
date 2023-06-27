@@ -1,10 +1,14 @@
-defmodule Mix.Tasks.Drivers do
+defmodule Mix.Tasks.DriversLoadTest do
   @moduledoc "TODO"
   use Mix.Task
 
   @shortdoc "TODO"
-  def run([count]) do
-    count = String.to_integer(count)
+  def run([]) do
+    run(["1.0"])
+  end
+
+  def run([scale]) do
+    scale = String.to_float(scale)
 
     # To run `runtime.exs`
     Mix.Task.run("app.config")
@@ -16,7 +20,7 @@ defmodule Mix.Tasks.Drivers do
     ws_base = Application.get_env(:when_to_process, :client)[:ws_base]
 
     IO.puts("socket stuff")
-    0..count
+    0..50_000
     |> Enum.with_index()
     |> Enum.each(fn {_, index} ->
       {:ok, _driver_pid} = WhenToProcess.Client.Driver.start_link(%{
@@ -27,12 +31,24 @@ defmodule Mix.Tasks.Drivers do
         ]
       })
 
-      Process.sleep(20)
+      if rem(index, pause_interval(index, scale)) == 0 do
+        IO.puts("PAUSE")
+        Process.sleep(1_000)
+      end
     end)
 
     IO.puts("socket stuff DONE")
 
     Process.sleep(100_000_000)
   end
+
+  def pause_interval(index, scale) do
+    round(pause_interval_base(index) * scale)
+  end
+  def pause_interval_base(index) when index < 1_000, do: 10
+  def pause_interval_base(index) when index < 2_000, do: 8
+  def pause_interval_base(index) when index < 3_000, do: 5
+  def pause_interval_base(index) when index < 5_000, do: 3
+  def pause_interval_base(index) when index < 100_000, do: 1
 end
 

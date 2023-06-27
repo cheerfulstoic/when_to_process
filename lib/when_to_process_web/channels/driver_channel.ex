@@ -11,7 +11,7 @@ defmodule WhenToProcessWeb.DriverChannel do
 
     WhenToProcess.ProcessTelemetry.monitor(self(), __MODULE__)
 
-    {:ok, assign(socket, :driver, Rides.get_driver!(driver_uuid))}
+    {:ok, assign(socket, :driver, Rides.get!(Rides.Driver, driver_uuid))}
   end
 
   # Channels can be used in a request/response fashion

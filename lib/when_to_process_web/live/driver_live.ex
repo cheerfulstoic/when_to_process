@@ -15,7 +15,7 @@ defmodule WhenToProcessWeb.DriverLive do
         case WhenToProcess.Locations.random_location(:stockholm) do
           {:ok, position} ->
         IO.puts("B!")
-            Rides.create_driver(%{name: Faker.Person.En.name(), position: position})
+            Rides.create(Rides.Driver, %{name: Faker.Person.En.name(), position: position})
 
             # Handle error
         end

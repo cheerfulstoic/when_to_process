@@ -23,9 +23,7 @@ defmodule WhenToProcess.Application do
       WhenToProcess.PromEx,
       # Start a worker by calling: WhenToProcess.Worker.start_link(arg)
       # {WhenToProcess.Worker, arg}
-      WhenToProcess.Rides.child_spec()
-    ]
-    |> Enum.reject(&is_nil/1)
+    ] ++ WhenToProcess.Rides.child_specs()
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options

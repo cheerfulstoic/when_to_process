@@ -1,11 +1,19 @@
 defmodule WhenToProcess.Rides.DriverServer do
   use GenServer
 
+  @supervisor_name :driver_dynamic_supervisor
   def create(driver) do
     DynamicSupervisor.start_child(
-      :driver_dynamic_supervisor,
+      @supervisor_name,
       {__MODULE__, driver}
     )
+  end
+
+  def reset do
+    DynamicSupervisor.which_children(@supervisor_name)
+    |> Enum.each(fn {_, pid, :worker, [__MODULE__]} ->
+      DynamicSupervisor.terminate_child(@supervisor_name, pid)
+    end)
   end
 
   def update_driver(driver) do

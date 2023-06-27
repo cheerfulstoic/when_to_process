@@ -12,7 +12,7 @@ defmodule WhenToProcessWeb.PassengerLive do
       if connected?(socket) do
         case WhenToProcess.Locations.random_location(:stockholm) do
           {:ok, position} ->
-            Rides.create_passenger(%{name: Faker.Person.En.name(), position: position})
+            Rides.create(Rides.Passenger, %{name: Faker.Person.En.name(), position: position})
             # Handle error
         end
       else

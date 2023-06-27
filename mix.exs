@@ -35,7 +35,7 @@ defmodule WhenToProcess.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
-      {:phoenix, "~> 1.7.0-rc.0", override: true},
+      {:phoenix, "~> 1.7.6", override: true},
       {:phoenix_ecto, "~> 4.4"},
       {:ecto_sql, "~> 3.6"},
       {:postgrex, ">= 0.0.0"},
@@ -57,7 +57,6 @@ defmodule WhenToProcess.MixProject do
 
       # Non-default:
       {:faker, "~> 0.17"},
-      {:ex_machina, "~> 2.7.0", only: :test},
       {:geocalc, "~> 0.8"},
       {:ecto_require_associations, "~> 0.1.3"},
       {:mix_test_watch, "~> 1.0", only: [:dev, :test], runtime: false},
@@ -67,7 +66,15 @@ defmodule WhenToProcess.MixProject do
       {:mint_web_socket, "~> 1.0"},
       {:ex2ms, "~> 1.6.1"},
       {:telemetry_metrics_statsd, "~> 0.6.0"},
-      {:prom_ex, "~> 1.8.0"}
+      {:prom_ex, "~> 1.8.0"},
+      {:cowboy_telemetry, "~> 0.4.0"},
+
+      {:bandit, "~> 1.0-pre"},
+
+
+      # Test
+      {:ex_machina, "~> 2.7.0", only: :test},
+      {:assertions, "~> 0.10", only: :test}
     ]
   end
 

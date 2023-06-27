@@ -3,9 +3,9 @@ defmodule WhenToProcess.Rides.RideTest do
 
   # alias WhenToProcess.Rides.Ride
 
-  describe ".changeset" do
-    test "bad position" do
-    end
-  end
+  # describe ".changeset" do
+  #   test "bad position" do
+  #   end
+  # end
 end
 

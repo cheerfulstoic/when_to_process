@@ -24,6 +24,8 @@ defmodule WhenToProcess.DataCase do
       import Ecto.Changeset
       import Ecto.Query
       import WhenToProcess.DataCase
+
+      import Assertions
     end
   end
 

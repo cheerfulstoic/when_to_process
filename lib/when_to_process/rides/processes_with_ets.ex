@@ -17,13 +17,15 @@ defmodule WhenToProcess.Rides.ProcessesWithETS do
   @impl Rides
   def ready?, do: WhenToProcess.Supervisor.ready?(__MODULE__.Supervisor)
   @impl Rides
-  def list_drivers, do: __MODULE__.DriverInformation.query_all()
+  def list(Rides.Driver), do: __MODULE__.DriverInformation.query_all()
   @impl Rides
-  def count_drivers, do: __MODULE__.DriverInformation.count()
+  def count(Rides.Driver), do: __MODULE__.DriverInformation.count()
   @impl Rides
-  def get_driver!(uuid), do: DriverServer.get_driver(uuid)
+  def get(Rides.Driver, uuid), do: DriverServer.get_driver(uuid)
   @impl Rides
-  def available_drivers(position, count), do: __MODULE__.DriverInformation.top_ready_near(position, 2_000, count)
+  def reload(record), do: DriverServer.get_driver(record.uuid)
+  @impl Rides
+  def available_drivers(position, count), do: __MODULE__.DriverInformation.list_nearby(position, 2_000, count)
 
   # TODO
   @impl Rides
@@ -36,16 +38,15 @@ defmodule WhenToProcess.Rides.ProcessesWithETS do
   def reject_ride_request(_ride_request, _driver) do
   end
 
-  # TODO
   @impl Rides
-  def reload(_record) do
-    nil
-  end
-
-  @impl Rides
-  def reset do
-    # TODO: Need to remove the DriverServer processes
+  def reset(Rides.Driver) do
     __MODULE__.DriverInformation.reset()
+    DriverServer.reset()
+
+    :ok
+  end
+  def reset(_) do
+    :ok
   end
 
   @impl Rides

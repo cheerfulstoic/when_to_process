@@ -18,7 +18,7 @@ defmodule WhenToProcess.Client.Driver do
     socket =
       config.slipstream_config
       |> connect!()
-      |> assign(:driver_uuid, nil)
+      |> assign(:uuid, nil)
       |> assign(:last_bearing, bearing)
       |> assign(:position, start_position)
       |> assign(:ready_for_passengers, false)
@@ -34,18 +34,21 @@ defmodule WhenToProcess.Client.Driver do
   @impl Slipstream
   def handle_connect(socket) do
     case create_driver() do
-      {:ok, driver_uuid} ->
+      {:ok, uuid} ->
         send_move()
         send_change_status()
         send_adjust_bearing()
 
         {:ok,
           socket
-          |> assign(:driver_uuid, driver_uuid)
-          |> join("driver:#{driver_uuid}")
+          |> assign(:uuid, uuid)
+          |> join("driver:#{uuid}")
         }
 
-      {:error, _} ->
+      # {:error, %HTTPoison.Error{reason: :eaddrnotavail}} ->
+
+      {:error, value} ->
+        IO.inspect(value, label: :error_value)
          {:stop, :create_driver_error, socket}
     end
   end
@@ -56,6 +59,8 @@ defmodule WhenToProcess.Client.Driver do
     opts = [timeout: 60_000, recv_timeout: 60_000]
 
     with {:error, _} <- HTTPoison.post("#{http_base}/drivers", "", [], opts) do
+      IO.puts("Retrying...")
+      Process.sleep(5_000)
       HTTPoison.post("#{http_base}/drivers", "", [], opts)
     end
     |> case do
@@ -65,6 +70,9 @@ defmodule WhenToProcess.Client.Driver do
           |> Jason.decode!()
           |> Map.get("uuid")
         }
+
+      {:ok, %HTTPoison.Response{body: body}} ->
+        {:error, body}
 
       {:error, _} = error ->
         error
@@ -85,13 +93,13 @@ defmodule WhenToProcess.Client.Driver do
   end
 
   @impl Slipstream
-  def handle_info(:move, %{assigns: %{driver_uuid: nil}} = socket) do
+  def handle_info(:move, %{assigns: %{uuid: nil}} = socket) do
     {:noreply, socket}
   end
 
   def handle_info(:move, socket) do
     # Logger.info("move")
-    driver_uuid = socket.assigns.driver_uuid
+    uuid = socket.assigns.uuid
     {latitude, longitude} = socket.assigns.position
 
     bearing = WhenToProcess.Locations.standardize_bearing(socket.assigns.last_bearing + (:rand.uniform() * 0.3) - 0.15)
@@ -99,8 +107,8 @@ defmodule WhenToProcess.Client.Driver do
     distance = :rand.uniform(400)
     {:ok, {new_latitude, new_longitude}} = WhenToProcess.Locations.adjust({latitude, longitude}, bearing, distance)
 
-    case push(socket, "driver:#{driver_uuid}", "update_location", %{latitude: new_latitude, longitude: new_longitude}) do
-      {:ok, _} ->
+    case push_handled(socket, "driver:#{uuid}", "update_location", %{latitude: new_latitude, longitude: new_longitude}) do
+      {:ok, socket} ->
         send_move()
 
         {:noreply,
@@ -108,10 +116,8 @@ defmodule WhenToProcess.Client.Driver do
           |> assign(:position, {new_latitude, new_longitude})
           |> assign(:last_bearing, bearing)
         }
-      other ->
-        IO.inspect(other)
-        IO.puts("COULD NOT PUSH UPDATE_LOCATION!!!")
 
+      {:error, _message} ->
         {:noreply, socket}
     end
 
@@ -123,23 +129,42 @@ defmodule WhenToProcess.Client.Driver do
 
     send_change_status()
 
-    driver_uuid = socket.assigns.driver_uuid
+    uuid = socket.assigns.uuid
+
+    # http_base = Application.get_env(:when_to_process, :client)[:http_base]
+
+    # {:ok, _} = HTTPoison.get("#{http_base}/drivers/wait")
 
     message = if(ready_for_passengers, do: "go_online", else: "no_more_passengers")
 
-    case push(socket, "driver:#{driver_uuid}", message, nil) do
+    case push_handled(socket, "driver:#{uuid}", message, nil) do
       {:ok, _} ->
         {:noreply,
           socket
           |> assign(:ready_for_passengers, ready_for_passengers)
         }
 
-      _ ->
-        IO.puts("COULD NOT PUSH GO_ONLINE!!!")
-
+      {:error, message} ->
         {:noreply, socket}
     end
 
+  end
+
+  def push_handled(socket, topic, event, params, timeout \\ 5_000) do
+    case push(socket, topic, event, params, timeout) do
+      {:ok, _} ->
+        {:ok, socket}
+
+      {:error, :not_joined} ->
+        {:ok, socket} = rejoin(socket, topic)
+
+        {:ok, socket}
+
+     {:error, message} = error ->
+       IO.puts("COULD NOT PUSH #{event} to #{topic}!!! #{inspect(message)}")
+
+       error
+    end
   end
 
   def handle_info(:adjust_bearing, socket) do
@@ -148,7 +173,8 @@ defmodule WhenToProcess.Client.Driver do
     {:noreply, assign(socket, :last_bearing, WhenToProcess.Locations.random_bearing())}
   end
 
-  @move_delay 5_000
+  # @move_delay 5_000
+  @move_delay 20_000
   @change_status_delay 60_000
   @adjust_bearing_delay 20_000
 
