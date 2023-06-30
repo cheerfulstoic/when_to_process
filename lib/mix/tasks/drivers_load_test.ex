@@ -27,7 +27,11 @@ defmodule Mix.Tasks.DriversLoadTest do
         slipstream_config: [
           uri: "#{ws_base}/socket/websocket",
           reconnect_after_msec: [200, 500, 1_000, 2_000],
-          mint_opts: [log: true, protocols: [:http1]]
+          mint_opts: [
+            log: true,
+            protocols: [:http1],
+            transport_opts: [inet6: true]
+          ]
         ]
       })
 

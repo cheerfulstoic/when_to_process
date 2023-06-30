@@ -11,6 +11,7 @@ defmodule WhenToProcessWeb.UserSocket do
   # pointing to the `WhenToProcessWeb.RoomChannel`:
 
   channel "driver:*", WhenToProcessWeb.DriverChannel
+  channel "passenger:*", WhenToProcessWeb.PassengerChannel
 
   #
   # To create a channel file, use the mix task:

@@ -8,6 +8,7 @@ defmodule WhenToProcessWeb.Telemetry do
 
   @impl true
   def init(_arg) do
+
     children = [
       # Telemetry poller will execute the given period measurements
       # every 10_000ms. Learn more here: https://hexdocs.pm/telemetry_metrics
@@ -16,11 +17,11 @@ defmodule WhenToProcessWeb.Telemetry do
       # Add reporters as children of your supervision tree.
       # {Telemetry.Metrics.ConsoleReporter, metrics: metrics()}
       {TelemetryMetricsStatsd,
-        metrics: metrics(),
-        host: System.get_env("TELEMETRY_METRICS_STATSD_HOST")
-              |>  Base.decode64!()
-              |> :erlang.binary_to_term(),
-        port: String.to_integer(System.get_env("TELEMETRY_METRICS_STATSD_PORT"))
+        System.get_env("TELEMETRY_METRICS_STATSD_OPTS")
+        |>  Base.decode64!()
+        |> :erlang.binary_to_term()
+        |> IO.inspect(label: :opts)
+        |> Keyword.put(:metrics, metrics()),
       }
     ]
 
@@ -101,29 +102,33 @@ defmodule WhenToProcessWeb.Telemetry do
 
       counter("when_to_process.process_crash.module", tags: [:reason, :module]),
 
-      summary("when_to_process.drivers.total"),
-      summary("when_to_process.processes.module.driver_channels.total"),
-      summary("when_to_process.processes.module.PositionedRecordStore.total"),
-      summary("when_to_process.processes.module.PartitionedPositionedRecordStore.total"),
-      summary("when_to_process.processes.module.ETSPositionedRecordsStore.total"),
-      summary("when_to_process.processes.module.cowboy_clear.total"),
-      summary("when_to_process.processes.module.bandit_delegating_handler.total"),
-      summary("when_to_process.processes.module.processes_only_driver_server.total"),
+      last_value("when_to_process.drivers.total"),
+      last_value("when_to_process.passengers.total"),
+      last_value("when_to_process.processes.module.driver_channels.total"),
+      last_value("when_to_process.processes.module.passenger_channels.total"),
+      last_value("when_to_process.processes.module.RecordStore.total"),
+      last_value("when_to_process.processes.module.PartitionedRecordStore.total"),
+      last_value("when_to_process.processes.module.ETSPositionedRecordsStore.total"),
+      last_value("when_to_process.processes.module.cowboy_clear.total"),
+      last_value("when_to_process.processes.module.bandit_delegating_handler.total"),
+      last_value("when_to_process.processes.module.processes_only_driver_server.total"),
 
-      summary("when_to_process.processes.process_info.ets_positioned_records_store_for_driver.message_queue_len"),
-      summary("when_to_process.processes.process_info.ets_positioned_records_store_for_passenger.message_queue_len"),
-      summary("when_to_process.processes.process_info.positioned_record_store_for_driver.message_queue_len"),
-      summary("when_to_process.processes.process_info.positioned_record_store_for_passenger.message_queue_len")
+      last_value("when_to_process.processes.process_info.ets_positioned_records_store_for_driver.message_queue_len"),
+      last_value("when_to_process.processes.process_info.ets_positioned_records_store_for_passenger.message_queue_len"),
+      last_value("when_to_process.processes.process_info.positioned_record_store_for_driver.message_queue_len"),
+      last_value("when_to_process.processes.process_info.positioned_record_store_for_passenger.message_queue_len")
     ]
   end
 
   defp periodic_measurements do
     [
-      {__MODULE__, :driver_count, []},
+      {__MODULE__, :record_count, [WhenToProcess.Rides.Driver, :drivers]},
+      {__MODULE__, :record_count, [WhenToProcess.Rides.Passenger, :passengers]},
       {__MODULE__, :measure_module_instance_count, [WhenToProcessWeb.DriverChannel, :driver_channels]},
-      {__MODULE__, :measure_module_instance_count, [WhenToProcess.Rides.PositionedRecordStore, :PositionedRecordStore]},
+      {__MODULE__, :measure_module_instance_count, [WhenToProcessWeb.PassengerChannel, :passenger_channels]},
+      {__MODULE__, :measure_module_instance_count, [WhenToProcess.Rides.RecordStore, :RecordStore]},
       {__MODULE__, :measure_module_instance_count, [WhenToProcess.Rides.ETSPositionedRecordsStore, :ETSPositionedRecordsStore]},
-      {__MODULE__, :measure_module_instance_count, [WhenToProcess.Rides.PartitionedPositionedRecordStore, :PartitionedPositionedRecordStore]},
+      {__MODULE__, :measure_module_instance_count, [WhenToProcess.Rides.PartitionedRecordStore, :PartitionedRecordStore]},
       {__MODULE__, :measure_module_instance_count, [:cowboy_clear]},
       {__MODULE__, :measure_module_instance_count, [Bandit.DelegatingHandler, :bandit_delegating_handler]},
       {__MODULE__, :process_info, [:"ets_positioned_records_store_for_Elixir.WhenToProcess.Rides.Driver", :ets_positioned_records_store_for_driver]},
@@ -133,9 +138,9 @@ defmodule WhenToProcessWeb.Telemetry do
     ]
   end
 
-  def driver_count do
+  def record_count(module, telemetry_name) do
     if WhenToProcess.Rides.ready?() do
-      :telemetry.execute([:when_to_process, :drivers], %{total: WhenToProcess.Rides.count(WhenToProcess.Rides.Driver)}, %{})
+      :telemetry.execute([:when_to_process, telemetry_name], %{total: WhenToProcess.Rides.count(module)}, %{})
     end
   end
 

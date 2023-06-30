@@ -115,7 +115,17 @@ defmodule WhenToProcess.Rides do
     end
   end
 
-  def cancel_request(passenger), do: global_state_implementation_module().cancel_request(passenger)
+  def cancel_request(passenger) do
+    case global_state_implementation_module().cancel_request(passenger) do
+      {:ok, updated_ride_request} ->
+        # Possible race condition?
+        Map.put(passenger, :ride_request, updated_ride_request)
+        |> WhenToProcess.PubSub.broadcast_record_update()
+
+      {:error, failed_changeset} ->
+         {:error, error_from_changeset(failed_changeset)}
+    end
+  end
 
   def create_ride(attrs) do
     attrs

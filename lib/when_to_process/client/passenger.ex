@@ -33,15 +33,16 @@ defmodule WhenToProcess.Client.Passenger do
 
   @impl Slipstream
   def handle_connect(socket) do
-    case craete_passenger() do
+    case create_passenger() do
       {:ok, uuid} ->
-        # send_move()
+        send_toggle_ride_request()
         # send_change_status()
         # send_adjust_bearing()
 
         {:ok,
           socket
           |> assign(:uuid, uuid)
+          |> assign(:current_status, :idle)
           |> join("passenger:#{uuid}")
         }
 
@@ -51,7 +52,7 @@ defmodule WhenToProcess.Client.Passenger do
     end
   end
 
-  defp craete_passenger do
+  defp create_passenger do
     http_base = Application.get_env(:when_to_process, :client)[:http_base]
 
     opts = [timeout: 60_000, recv_timeout: 60_000]
@@ -75,5 +76,63 @@ defmodule WhenToProcess.Client.Passenger do
     end
   end
 
+  def handle_info(:toggle_ride_request, socket) do
+    # Logger.info("toggle_ride_request")
+
+    uuid = socket.assigns.uuid
+
+    {message_to_send, next_state_on_success} =
+      case socket.assigns.current_status do
+        :idle ->
+          {"request_ride", :ride_requested}
+
+        :ride_requested ->
+          {"cancel_ride_request", :idle}
+      end
+
+    IO.puts("Sending #{message_to_send}")
+    case push_handled(socket, "passenger:#{uuid}", message_to_send, %{}) do
+      {:ok, socket} ->
+        IO.puts("#{message_to_send} SUCCESS")
+
+        send_toggle_ride_request()
+
+        {:noreply, assign(socket, :current_status, next_state_on_success)}
+
+      {:error, _} ->
+        {:noreply, socket}
+    end
+  end
+
+  def push_handled(socket, topic, event, params, timeout \\ 5_000) do
+    case push(socket, topic, event, params, timeout) do
+      {:ok, _} ->
+        {:ok, socket}
+
+      {:error, :not_joined} ->
+        {:ok, socket} = rejoin(socket, topic)
+
+        {:ok, socket}
+
+     {:error, message} = error ->
+       IO.puts("COULD NOT PUSH #{event} to #{topic}!!! #{inspect(message)}")
+
+       error
+    end
+  end
+
+  # @move_delay 8_000
+  # @change_status_delay 20_000
+  # @adjust_bearing_delay 12_000
+  @toggle_ride_request_delay 12_000
+
+  defp send_toggle_ride_request do
+    Process.send_after(self(), :toggle_ride_request, random_from(@toggle_ride_request_delay))
+  end
+
+  defp random_from(delay) do
+    floor = div(delay, 2)
+    :rand.uniform(delay - floor) + floor
+  end
 end
 

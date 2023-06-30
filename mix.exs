@@ -35,6 +35,10 @@ defmodule WhenToProcess.MixProject do
   # Type `mix help deps` for examples and options.
   defp deps do
     [
+      # Temporary
+      # See https://elixirforum.com/t/elixir-v1-15-0-released/56584/3
+      {:ssl_verify_fun, "1.1.0", manager: :rebar3, runtime: false, override: true},
+
       {:phoenix, "~> 1.7.6", override: true},
       {:phoenix_ecto, "~> 4.4"},
       {:ecto_sql, "~> 3.6"},
@@ -60,12 +64,12 @@ defmodule WhenToProcess.MixProject do
       {:geocalc, "~> 0.8"},
       {:ecto_require_associations, "~> 0.1.3"},
       {:mix_test_watch, "~> 1.0", only: [:dev, :test], runtime: false},
-      {:slipstream, "~> 1.0"},
+      {:slipstream, "~> 1.1"},
       {:phoenix_client, "~> 0.3"},
       {:httpoison, "~> 2.0"},
       {:mint_web_socket, "~> 1.0"},
       {:ex2ms, "~> 1.6.1"},
-      {:telemetry_metrics_statsd, github: "cheerfulstoic/telemetry_metrics_statsd"},
+      {:telemetry_metrics_statsd,  github: "cheerfulstoic/telemetry_metrics_statsd"},
       {:prom_ex, "~> 1.8.0"},
       {:cowboy_telemetry, "~> 0.4.0"},
 

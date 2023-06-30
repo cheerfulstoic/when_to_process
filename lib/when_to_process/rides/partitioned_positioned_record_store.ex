@@ -1,8 +1,7 @@
-defmodule WhenToProcess.Rides.PartitionedPositionedRecordStore do
+defmodule WhenToProcess.Rides.PartitionedRecordStore do
   @moduledoc """
-  For storing and retrieving single records of a particular type which has
-  latitude and longitude properties.  Uses PartitionSupervisor instead of
-  having one process per record
+  For storing and retrieving single records.
+  Uses PartitionSupervisor instead of having one process per record
   """
 
   alias WhenToProcess.Rides

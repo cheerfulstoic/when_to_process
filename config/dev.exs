@@ -29,9 +29,9 @@ config :when_to_process, WhenToProcessWeb.Endpoint,
   http: [ip: {0, 0, 0, 0, 0, 0, 0, 0}, port: 4000],
   # http: [:inet6, port: 4000],
   check_origin: false,
+  code_reloader: true,
   # TEMP FOR TESTING
-  # code_reloader: true,
-  code_reloader: false,
+  # code_reloader: false,
   debug_errors: true,
   secret_key_base: "3P3Tx7jz8BL7Ypo5634FpsfqgWQcBDsj6zZsq7JfwBMkLYdKWZPKwpm0B28kcHwQ",
   watchers: [

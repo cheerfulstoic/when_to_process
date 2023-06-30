@@ -1,4 +1,4 @@
-defmodule WhenToProcess.Rides.PositionedRecordStore do
+defmodule WhenToProcess.Rides.RecordStore do
   @moduledoc """
   For storing and retrieving a single records of a particular type which has
   latitude and longitude properties

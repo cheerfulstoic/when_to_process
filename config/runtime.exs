@@ -24,7 +24,7 @@ if System.get_env("LOG_LEVEL") do
   config :logger, level: String.to_atom(System.get_env("LOG_LEVEL"))
 end
 
-config :when_to_process, :client, http_base: "https://when-to-process.fly.dev", ws_base: "wss://when-to-process.fly.dev"
+config :when_to_process, :client, http_base: "http://when-to-process.internal:8080", ws_base: "ws://when-to-process.internal:8080"
 # config :when_to_process, :client, http_base: "https://when-to-process.fly.dev", ws_base: "wss://when-to-process.fly.dev"
 
 # RIDES_IMPLEMENTATION_MODULE should be one of:
@@ -43,7 +43,7 @@ else
   raise "RIDES_GLOBAL_IMPLEMENTATION_MODULE and RIDES_INDIVIDUAL_IMPLEMENTATION_MODULE environment variables required!"
 end
 
-config :when_to_process, WhenToProcess.Rides.PartitionedPositionedRecordStore, partitions: 4
+config :when_to_process, WhenToProcess.Rides.PartitionedRecordStore, partitions: 4
 
 
 if config_env() == :prod do

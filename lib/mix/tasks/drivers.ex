@@ -14,6 +14,7 @@ defmodule Mix.Tasks.Drivers do
     {:ok, _} = Application.ensure_all_started(:slipstream)
 
     ws_base = Application.get_env(:when_to_process, :client)[:ws_base]
+              |> IO.inspect(label: :ws_base)
 
     IO.puts("socket stuff")
     0..count
@@ -23,7 +24,11 @@ defmodule Mix.Tasks.Drivers do
         slipstream_config: [
           uri: "#{ws_base}/socket/websocket",
           reconnect_after_msec: [200, 500, 1_000, 2_000],
-          mint_opts: [log: true, protocols: [:http1]]
+          mint_opts: [
+            log: true,
+            protocols: [:http1],
+            transport_opts: [inet6: true]
+          ]
         ]
       })
 

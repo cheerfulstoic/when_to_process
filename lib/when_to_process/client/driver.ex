@@ -80,7 +80,8 @@ defmodule WhenToProcess.Client.Driver do
   end
 
   @impl Slipstream
-  def handle_disconnect(_reason, socket) do
+  def handle_disconnect(reason, socket) do
+    IO.puts("DISCONNECT: #{inspect(reason)}")
     case reconnect(socket) do
       {:ok, socket} -> {:ok, socket}
       {:error, reason} -> {:stop, reason, socket}
@@ -173,10 +174,9 @@ defmodule WhenToProcess.Client.Driver do
     {:noreply, assign(socket, :last_bearing, WhenToProcess.Locations.random_bearing())}
   end
 
-  # @move_delay 5_000
-  @move_delay 20_000
-  @change_status_delay 60_000
-  @adjust_bearing_delay 20_000
+  @move_delay 8_000
+  @change_status_delay 20_000
+  @adjust_bearing_delay 12_000
 
   defp send_move do
     Process.send_after(self(), :move, random_from(@move_delay))

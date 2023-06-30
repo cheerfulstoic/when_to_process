@@ -60,18 +60,9 @@ defmodule WhenToProcess.Rides.DB do
 
   @impl Rides
   def cancel_request(%Passenger{} = passenger) do
-    result =
-      passenger.ride_request
-      |> RideRequest.changeset(%{cancelled_at: DateTime.utc_now()})
-      |> update_changeset()
-
-    with {:ok, _ride_request} <- result do
-      {:ok,
-        passenger
-        |> Repo.preload(:ride_request, force: true)
-        |> WhenToProcess.PubSub.broadcast_record_update()
-      }
-    end
+    passenger.ride_request
+    |> RideRequest.changeset(%{cancelled_at: DateTime.utc_now()})
+    |> update_changeset()
   end
 
   @impl Rides.State

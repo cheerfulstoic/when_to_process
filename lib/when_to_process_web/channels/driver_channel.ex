@@ -6,7 +6,7 @@ defmodule WhenToProcessWeb.DriverChannel do
 
   @impl true
   def join("driver:" <> driver_uuid, _payload, socket) do
-    # IO.inspect("GOT A JOIN REQUEST!  #{driver_uuid}")
+    # IO.inspect("GOT A DRIVER JOIN REQUEST!  #{driver_uuid}")
     send(self(), :after_join)
 
     WhenToProcess.ProcessTelemetry.monitor(self(), __MODULE__)
