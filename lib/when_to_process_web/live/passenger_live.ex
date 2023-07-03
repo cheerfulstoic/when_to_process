@@ -106,7 +106,7 @@ defmodule WhenToProcessWeb.PassengerLive do
   end
 
   @impl true
-  def handle_info({:ride_request_accepted, _ride}, socket) do
+  def handle_info({:ride_request_accepted, _ride_request}, socket) do
     passenger =
       socket.assigns.passenger
       |> WhenToProcess.Repo.preload([current_ride: :driver], force: true)

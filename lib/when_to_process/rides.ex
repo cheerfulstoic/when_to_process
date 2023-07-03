@@ -102,16 +102,14 @@ defmodule WhenToProcess.Rides do
   def accept_ride_request(ride_request, driver) do
     ride_request = reload(ride_request)
 
-    # TODO: Update RideRequest while giving associated Ride attributes
-    # same as creating ride_request on Passenger in `request_ride/1`
     with :ok <- RideRequest.check_can_be_accepted(ride_request) do
-      create(Ride, %{driver_id: driver.id, ride_request_id: ride_request.id})
+      update_record(ride_request, %{created_ride: %{driver_id: driver.id}})
       |> case do
-        {:ok, ride} ->
+        {:ok, ride_request} ->
           # IO.puts("Broadcasting to passenger:#{ride_request.passenger_id}")
-          WhenToProcess.PubSub.broadcast("passenger:#{ride_request.passenger_id}", {:ride_request_accepted, ride})
+          WhenToProcess.PubSub.broadcast("passenger:#{ride_request.passenger_id}", {:ride_request_accepted, ride_request})
 
-          {:ok, Map.put(ride_request, :created_ride, ride)}
+          {:ok, ride_request}
 
         {:error, failed_changeset} ->
            {:error, error_from_changeset(failed_changeset)}
