@@ -101,7 +101,7 @@ defmodule WhenToProcess.Rides do
     ride_request = reload(ride_request)
 
     with :ok <- RideRequest.check_can_be_accepted(ride_request) do
-      create_ride(%{driver_id: driver.id, ride_request_id: ride_request.id})
+      create(Ride, %{driver_id: driver.id, ride_request_id: ride_request.id})
       |> case do
         {:ok, ride} ->
           # IO.puts("Broadcasting to passenger:#{ride_request.passenger_id}")
@@ -125,12 +125,6 @@ defmodule WhenToProcess.Rides do
       {:error, failed_changeset} ->
          {:error, error_from_changeset(failed_changeset)}
     end
-  end
-
-  def create_ride(attrs) do
-    attrs
-    |> Ride.changeset_for_insert()
-    |> global_state_implementation_module().insert_changeset()
   end
 
   # Just for use internally

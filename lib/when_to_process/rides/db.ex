@@ -12,7 +12,7 @@ defmodule WhenToProcess.Rides.DB do
   @behaviour Rides.IndividualState
 
   @impl Rides.State
-  def child_spec(_record_module), do: nil
+  def state_child_spec(_record_module), do: nil
 
   @impl Rides.State
   def ready?(_record_module) do

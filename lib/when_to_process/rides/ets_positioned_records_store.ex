@@ -85,7 +85,7 @@ defmodule WhenToProcess.Rides.ETSPositionedRecordsStore do
   end
 
   @impl Rides
-  def cancel_request(%Passenger{} = passenger) do
+  def cancel_request(%Rides.Passenger{} = passenger) do
     raise "TODO!"
   end
 

@@ -15,23 +15,31 @@ defmodule WhenToProcess.Rides.PartitionedRecordStore do
     # Taking just the uuid instead of the whole object because if the process restarts
     # we don't want to start off with old data.  We should re-fetch from the global state
     # each time the process gets started/restarted.
-    GenServer.start_link(__MODULE__, record_module, name: name(record_module))
+    GenServer.start_link(__MODULE__, record_module)
   end
 
   @impl Rides.State
   def state_child_spec(record_module) do
+    name = 
     {PartitionSupervisor,
-      child_spec: __MODULE__.child_spec(record_module),
-      name: __MODULE__.PartitionSupervisor
+      child_spec: child_spec(record_module),
+      name: supervisor_name(record_module)
+    }
+  end
+
+  def child_spec(record_module) do
+    %{
+      id: record_module,
+      start: {__MODULE__, :start_link, [record_module]}
     }
   end
 
   @impl Rides.State
-  def ready?(record_module), do: !!Process.whereis(__MODULE__.PartitionSupervisor)
+  def ready?(record_module), do: !!Process.whereis(supervisor_name(record_module))
 
   @impl Rides.State
   def reset(record_module) do
-    DynamicSupervisor.which_children(__MODULE__.PartitionSupervisor)
+    PartitionSupervisor.which_children(supervisor_name(record_module))
     |> Enum.each(fn {_, pid, :worker, [__MODULE__]} ->
       GenServer.call(pid, :reset)
     end)
@@ -108,12 +116,16 @@ defmodule WhenToProcess.Rides.PartitionedRecordStore do
     {:reply, :ok, %{}}
   end
 
-  defp name(record_module) do
-    :"partitioned_positioned_record_store_for_#{record_module}"
+  # defp name(record_module) do
+  #   :"partitioned_positioned_record_store_for_#{record_module}"
+  # end
+
+  def supervisor_name(record_module) do
+    :"partitioned_record_store_for_#{record_module}"
   end
 
   defp via_name(record_module, uuid) do
-    {:via, PartitionSupervisor, {__MODULE__.PartitionSupervisor, uuid}}
+    {:via, PartitionSupervisor, {supervisor_name(record_module), uuid}}
   end
 
   def message_key(message) when is_tuple(message), do: elem(message, 0)
