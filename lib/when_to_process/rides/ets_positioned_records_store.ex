@@ -49,7 +49,7 @@ defmodule WhenToProcess.Rides.ETSPositionedRecordsStore do
   @impl Rides.GlobalState
   def list(record_module) do
     ms = Ex2ms.fun do
-      {_uuid, _driver_latitude, _driver_longitude, driver} -> driver
+      {_uuid, _record_latitude, _record_longitude, record} -> record
     end
 
     :ets.select(table_name(record_module), ms)
@@ -58,7 +58,7 @@ defmodule WhenToProcess.Rides.ETSPositionedRecordsStore do
   @impl Rides.GlobalState
   def count(record_module) do
     ms = Ex2ms.fun do
-      {_uuid, _driver_latitude, _driver_longitude, _driver} -> true
+      {_uuid, _record_latitude, _record_longitude, _record} -> true
     end
 
     :ets.select_count(table_name(record_module), ms)
@@ -72,13 +72,13 @@ defmodule WhenToProcess.Rides.ETSPositionedRecordsStore do
     ] = Geocalc.bounding_box(position, distance)
 
     ms = Ex2ms.fun do
-      {uuid, driver_latitude, driver_longitude, driver} when driver_latitude >= ^latitude_west and driver_latitude <= ^latitude_east and driver_longitude >= ^longitude_south and driver_longitude <= ^longitude_north -> driver
+      {uuid, record_latitude, record_longitude, record} when record_latitude >= ^latitude_west and record_latitude <= ^latitude_east and record_longitude >= ^longitude_south and record_longitude <= ^longitude_north -> record
     end
 
     :ets.select(table_name(record_module), ms)
     |> Enum.filter(filter_fn)
-    |> Enum.sort_by(fn driver ->
-      Rides.sort_distance(position, Rides.position(driver))
+    |> Enum.sort_by(fn record ->
+      Rides.sort_distance(position, Rides.position(record))
     end)
     |> Enum.take(count)
   end
