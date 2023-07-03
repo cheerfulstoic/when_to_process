@@ -90,12 +90,18 @@ defmodule WhenToProcessWeb.PassengerLive do
 
   @impl true
   def handle_event("cancel-request", _params, socket) do
-    case Rides.cancel_request(socket.assigns.passenger) do
-      {:ok, passenger} ->
-        {:noreply, assign(socket, :passenger, passenger)}
+    case socket.assigns.passenger.ride_request do
+      nil ->
+        raise "An attempt was made to cancel a ride request when one was not set"
 
-      {:error, error} ->
-        {:noreply, update_socket_with_error(socket, error)}
+      ride_request ->
+        case Rides.cancel_request(ride_request) do
+          {:ok, passenger} ->
+            {:noreply, assign(socket, :passenger, passenger)}
+
+          {:error, error} ->
+            {:noreply, update_socket_with_error(socket, error)}
+        end
     end
   end
 

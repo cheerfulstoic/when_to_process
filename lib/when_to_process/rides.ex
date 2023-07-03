@@ -73,8 +73,10 @@ defmodule WhenToProcess.Rides do
 
   # Exists to allow tests to reset state
   def reset() do
-    global_state_implementation_module().reset(Driver)
-    global_state_implementation_module().reset(Passenger)
+    for implementation_module <- state_implementation_modules() do
+      implementation_module.reset(Driver)
+      implementation_module.reset(Passenger)
+    end
   end
 
   # Passenger actions
@@ -100,6 +102,8 @@ defmodule WhenToProcess.Rides do
   def accept_ride_request(ride_request, driver) do
     ride_request = reload(ride_request)
 
+    # TODO: Update RideRequest while giving associated Ride attributes
+    # same as creating ride_request on Passenger in `request_ride/1`
     with :ok <- RideRequest.check_can_be_accepted(ride_request) do
       create(Ride, %{driver_id: driver.id, ride_request_id: ride_request.id})
       |> case do
@@ -107,7 +111,7 @@ defmodule WhenToProcess.Rides do
           # IO.puts("Broadcasting to passenger:#{ride_request.passenger_id}")
           WhenToProcess.PubSub.broadcast("passenger:#{ride_request.passenger_id}", {:ride_request_accepted, ride})
 
-          {:ok, ride}
+          {:ok, Map.put(ride_request, :created_ride, ride)}
 
         {:error, failed_changeset} ->
            {:error, error_from_changeset(failed_changeset)}
@@ -115,12 +119,11 @@ defmodule WhenToProcess.Rides do
     end
   end
 
-  def cancel_request(passenger) do
-    case global_state_implementation_module().cancel_request(passenger) do
+  @spec cancel_request(RideRequest.t()) :: {:ok, RideRequest.t()} | {:error, Ecto.Changeset.t()}
+  def cancel_request(ride_request) do
+    case update_record(ride_request, %{cancelled_at: DateTime.utc_now()}) do
       {:ok, updated_ride_request} ->
-        # Possible race condition?
-        Map.put(passenger, :ride_request, updated_ride_request)
-        |> WhenToProcess.PubSub.broadcast_record_update()
+        WhenToProcess.PubSub.broadcast_record_update(updated_ride_request)
 
       {:error, failed_changeset} ->
          {:error, error_from_changeset(failed_changeset)}

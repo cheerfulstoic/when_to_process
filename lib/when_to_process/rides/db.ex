@@ -58,13 +58,6 @@ defmodule WhenToProcess.Rides.DB do
     |> Enum.filter(filter_fn)
   end
 
-  @impl Rides
-  def cancel_request(%Passenger{} = passenger) do
-    passenger.ride_request
-    |> RideRequest.changeset(%{cancelled_at: DateTime.utc_now()})
-    |> update_changeset()
-  end
-
   @impl Rides.State
   def insert_changeset(%Ecto.Changeset{} = changeset) do
     with {:ok, record} <- Repo.insert(changeset) do

@@ -26,6 +26,7 @@ defmodule WhenToProcess.PubSub do
   end
 
   defp record_type(%Rides.Ride{}), do: "ride"
+  defp record_type(%Rides.RideRequest{}), do: "ride_request"
   defp record_type(%Rides.Driver{}), do: "driver"
   defp record_type(%Rides.Passenger{}), do: "passenger"
 end

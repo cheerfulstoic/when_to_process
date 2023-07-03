@@ -51,7 +51,7 @@ defmodule WhenToProcessWeb.DriverLive do
           <.button phx-click="go-online">Go Online</.button>
         <% end %>
 
-        <%= if @ride_request do %>
+        <%= if @ride_request && !@ride_request.ride do %>
           <.modal id="ride-request-modal" on_confirm={JS.push("accept")} on_cancel={JS.push("reject")} show={true}>
             <h1>Ride Request</h1>
 
@@ -160,15 +160,14 @@ defmodule WhenToProcessWeb.DriverLive do
 
   @impl true
   def handle_event("accept", %{}, socket) do
-    ride = Rides.accept_ride_request(socket.assigns.ride_request, socket.assigns.driver)
+    ride_request = Rides.accept_ride_request(socket.assigns.ride_request, socket.assigns.driver)
 
     driver = preload_driver(socket.assigns.driver, force: true)
 
     {:noreply,
       socket
       |> assign(:driver, driver)
-      |> assign(:ride_request, nil)
-      |> assign(:ride, ride)
+      |> assign(:ride_request, ride_request)
     }
   end
 
