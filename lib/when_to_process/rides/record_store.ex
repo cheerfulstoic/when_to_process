@@ -7,7 +7,6 @@ defmodule WhenToProcess.Rides.RecordStore do
   alias WhenToProcess.Rides
 
   @behaviour Rides.State
-  @behaviour Rides.IndividualState
 
   use GenServer
 
@@ -34,10 +33,10 @@ defmodule WhenToProcess.Rides.RecordStore do
     end)
   end
 
-  @impl Rides.IndividualState
+  @impl Rides.State
   def get(record_module, uuid), do: traced_call(record_module, uuid, :get)
 
-  @impl Rides.IndividualState
+  @impl Rides.State
   def reload(%record_module{} = record) do
     get(record_module, record.uuid)
   end

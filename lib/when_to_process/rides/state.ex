@@ -4,6 +4,9 @@ defmodule WhenToProcess.Rides.State do
   @callback reset(module()) :: :ok
   @callback insert_changeset(Ecto.Changeset.t()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
   @callback update_changeset(Ecto.Changeset.t()) :: {:ok, Ecto.Schema.t()} | {:error, Ecto.Changeset.t()}
+
+  @callback get(module(), String.t()) :: term()
+  @callback reload(term()) :: term()
 end
 
 

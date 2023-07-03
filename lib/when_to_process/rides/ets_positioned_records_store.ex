@@ -3,7 +3,6 @@ defmodule WhenToProcess.Rides.ETSPositionedRecordsStore do
 
   @behaviour Rides.State
   @behaviour Rides.GlobalState
-  @behaviour Rides.IndividualState
 
   use GenServer
 
@@ -84,7 +83,7 @@ defmodule WhenToProcess.Rides.ETSPositionedRecordsStore do
     |> Enum.take(count)
   end
 
-  @impl Rides.IndividualState
+  @impl Rides.State
   def get(record_module, uuid) do
     case :ets.lookup(table_name(record_module), uuid) do
       [{_, _, _, record}] ->
@@ -94,7 +93,7 @@ defmodule WhenToProcess.Rides.ETSPositionedRecordsStore do
     end
   end
 
-  @impl Rides.IndividualState
+  @impl Rides.State
   def reload(%record_module{} = record) do
     get(record_module, record.uuid)
   end

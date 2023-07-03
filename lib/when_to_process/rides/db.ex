@@ -6,7 +6,6 @@ defmodule WhenToProcess.Rides.DB do
 
   @behaviour Rides.State
   @behaviour Rides.GlobalState
-  @behaviour Rides.IndividualState
 
   @impl Rides.State
   def state_child_spec(_record_module), do: nil
@@ -24,10 +23,10 @@ defmodule WhenToProcess.Rides.DB do
     Repo.aggregate(record_module, :count)
   end
 
-  @impl Rides.IndividualState
+  @impl Rides.State
   def get(record_module, uuid), do: Repo.get_by(record_module, uuid: uuid)
 
-  @impl Rides.IndividualState
+  @impl Rides.State
   def reload(record), do: Repo.reload(record)
 
   @impl Rides.State

@@ -8,7 +8,6 @@ defmodule WhenToProcess.Rides.PositionedRecordsStore do
 
   @behaviour Rides.State
   @behaviour Rides.GlobalState
-  @behaviour Rides.IndividualState
 
   use GenServer
 
@@ -59,10 +58,10 @@ defmodule WhenToProcess.Rides.PositionedRecordsStore do
   @impl Rides.GlobalState
   def list_nearby(record_module, position, distance, filter_fn, count), do: traced_call(record_module, {:list_nearby, position, distance, filter_fn, count})
 
-  @impl Rides.IndividualState
+  @impl Rides.State
   def get(record_module, uuid), do: traced_call(record_module, {:get, uuid})
 
-  @impl Rides.IndividualState
+  @impl Rides.State
   def reload(%record_module{} = record) do
     get(record_module, record.uuid)
   end

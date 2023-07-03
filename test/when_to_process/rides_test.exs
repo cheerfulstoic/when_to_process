@@ -5,7 +5,7 @@ defmodule WhenToProcess.RidesTest do
 
   alias WhenToProcess.Rides
 
-  setup context do
+  setup _context do
     Rides.reset()
 
     []
@@ -140,7 +140,7 @@ defmodule WhenToProcess.RidesTest do
     test "Driver" do
       {:ok, driver} = create_driver(latitude: 1.23, longitude: -3.21)
 
-      {:ok, updated_driver} = Rides.set_position(driver, {-3.21, 1.23})
+      {:ok, _updated_driver} = Rides.set_position(driver, {-3.21, 1.23})
 
       driver = Rides.reload(driver)
 
