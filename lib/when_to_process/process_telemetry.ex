@@ -5,7 +5,7 @@ defmodule WhenToProcess.ProcessTelemetry do
     GenServer.start_link(__MODULE__, nil, name: __MODULE__)
   end
 
-  def monitor(pid, module) do
+  def monitor(_pid, _module) do
     # Disabled Temporarily (?)
     # GenServer.cast(__MODULE__, {:monitor, pid, module})
   end

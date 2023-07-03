@@ -145,10 +145,15 @@ defmodule WhenToProcess.Client.Driver do
           |> assign(:ready_for_passengers, ready_for_passengers)
         }
 
-      {:error, message} ->
+      {:error, _message} ->
         {:noreply, socket}
     end
+  end
 
+  def handle_info(:adjust_bearing, socket) do
+    send_adjust_bearing()
+
+    {:noreply, assign(socket, :last_bearing, WhenToProcess.Locations.random_bearing())}
   end
 
   def push_handled(socket, topic, event, params, timeout \\ 5_000) do
@@ -166,12 +171,6 @@ defmodule WhenToProcess.Client.Driver do
 
        error
     end
-  end
-
-  def handle_info(:adjust_bearing, socket) do
-    send_adjust_bearing()
-
-    {:noreply, assign(socket, :last_bearing, WhenToProcess.Locations.random_bearing())}
   end
 
   @move_delay 8_000

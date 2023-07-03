@@ -84,11 +84,6 @@ defmodule WhenToProcess.Rides.ETSPositionedRecordsStore do
     |> Enum.take(count)
   end
 
-  @impl Rides
-  def cancel_request(%Rides.Passenger{} = passenger) do
-    raise "TODO!"
-  end
-
   @impl Rides.IndividualState
   def get(record_module, uuid) do
     case :ets.lookup(table_name(record_module), uuid) do

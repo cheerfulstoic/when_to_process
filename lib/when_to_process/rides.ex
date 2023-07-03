@@ -7,7 +7,6 @@ defmodule WhenToProcess.Rides do
 
   alias WhenToProcess.Rides.Driver
   alias WhenToProcess.Rides.Passenger
-  alias WhenToProcess.Rides.Ride
   alias WhenToProcess.Rides.RideRequest
 
   @type uuid :: Ecto.UUID.t()

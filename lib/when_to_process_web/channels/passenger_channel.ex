@@ -28,12 +28,18 @@ defmodule WhenToProcessWeb.PassengerChannel do
 
   @impl true
   def handle_in("cancel_ride_request", _, socket) do
-    case Rides.cancel_request(socket.assigns.passenger) do
-      {:ok, passenger} ->
-        {:reply, :ok, assign(socket, :passenger, passenger)}
+    case socket.assigns.passenger.ride_request do
+      nil ->
+        raise "An attempt was made to cancel a ride request when one was not set"
 
-      {:error, _} ->
-        {:reply, {:error, %{}}, socket}
+      ride_request ->
+        case Rides.cancel_request(ride_request) do
+          {:ok, passenger} ->
+            {:reply, :ok, assign(socket, :passenger, passenger)}
+
+          {:error, _} ->
+            {:reply, {:error, %{}}, socket}
+        end
     end
   end
 

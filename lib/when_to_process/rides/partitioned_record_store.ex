@@ -20,7 +20,6 @@ defmodule WhenToProcess.Rides.PartitionedRecordStore do
 
   @impl Rides.State
   def state_child_spec(record_module) do
-    name = 
     {PartitionSupervisor,
       child_spec: child_spec(record_module),
       name: supervisor_name(record_module)
@@ -87,7 +86,7 @@ defmodule WhenToProcess.Rides.PartitionedRecordStore do
 
 
   @impl true
-  def init(record_module) do
+  def init(_record_module) do
     WhenToProcess.ProcessTelemetry.monitor(self(), __MODULE__)
 
     {:ok, %{}}

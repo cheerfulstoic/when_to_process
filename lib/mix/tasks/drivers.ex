@@ -19,7 +19,7 @@ defmodule Mix.Tasks.Drivers do
     IO.puts("socket stuff")
     0..count
     |> Enum.with_index()
-    |> Enum.each(fn {_, index} ->
+    |> Enum.each(fn {_, _index} ->
       {:ok, _driver_pid} = WhenToProcess.Client.Driver.start_link(%{
         slipstream_config: [
           uri: "#{ws_base}/socket/websocket",

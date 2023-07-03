@@ -3,9 +3,6 @@ defmodule WhenToProcess.Rides.DB do
 
   alias WhenToProcess.Repo
   alias WhenToProcess.Rides
-  alias WhenToProcess.Rides.Driver
-  alias WhenToProcess.Rides.Passenger
-  alias WhenToProcess.Rides.RideRequest
 
   @behaviour Rides.State
   @behaviour Rides.GlobalState
