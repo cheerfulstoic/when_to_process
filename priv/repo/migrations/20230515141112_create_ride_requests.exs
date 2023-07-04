@@ -3,6 +3,8 @@ defmodule WhenToProcess.Repo.Migrations.CreateRideRequests do
 
   def change do
     create table(:ride_requests) do
+      add :uuid, :uuid, null: false
+
       add :passenger_id, references(:passengers), null: false
 
       add :cancelled_at, :naive_datetime, null: true

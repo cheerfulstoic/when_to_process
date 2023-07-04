@@ -23,6 +23,8 @@ defmodule WhenToProcess.Factory do
 
   def ride_request_factory do
     %Rides.RideRequest{
+      uuid: Ecto.UUID.generate(),
+      created_ride: nil,
       passenger: build(:passenger)
     }
   end

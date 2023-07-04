@@ -91,6 +91,9 @@ defmodule WhenToProcess.Rides.ETSPositionedRecordsStore do
       [{_, _, _, record}] ->
         record
 
+      [{_, record}] ->
+        record
+
       _ -> nil
     end
   end
@@ -165,7 +168,7 @@ defmodule WhenToProcess.Rides.ETSPositionedRecordsStore do
   end
 
   defp ets_tuple(record) do
-    {record.id, record}
+    {record.uuid, record}
   end
 
   def table_name(record_module) do

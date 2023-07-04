@@ -25,8 +25,7 @@ defmodule WhenToProcess.Rides.RideRequestTest do
       insert(:ride_request, passenger: passenger)
 
       {:error, %Ecto.Changeset{errors: changeset_errors}} =
-        %RideRequest{}
-        |> RideRequest.changeset(%{passenger_id: passenger.id})
+        RideRequest.changeset_for_insert(%{passenger_id: passenger.id})
         |> WhenToProcess.Repo.insert()
 
       assert [base: {"Passenger cannot have multiple open ride requests", _}] = changeset_errors
