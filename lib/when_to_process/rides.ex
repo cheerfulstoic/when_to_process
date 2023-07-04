@@ -12,10 +12,12 @@ defmodule WhenToProcess.Rides do
   @type uuid :: Ecto.UUID.t()
   @type position :: {float(), float()}
 
+  @state_record_modules [Driver, Passenger, RideRequest]
+
   def child_specs do
     state_implementation_modules()
     |> Enum.flat_map(fn module ->
-      [module.state_child_spec(Driver), module.state_child_spec(Passenger)]
+      Enum.map(@state_record_modules, & module.state_child_spec(&1))
     end)
     |> Enum.reject(&is_nil/1)
     |> Enum.uniq()
@@ -23,8 +25,9 @@ defmodule WhenToProcess.Rides do
   def ready?() do
     state_implementation_modules()
     |> Enum.all?(fn module ->
-      module.ready?(Driver) &&
-      module.ready?(Passenger)
+      Enum.all?(@state_record_modules, fn state_record_module ->
+        module.ready?(state_record_module)
+      end)
     end)
   end
 
@@ -72,9 +75,9 @@ defmodule WhenToProcess.Rides do
 
   # Exists to allow tests to reset state
   def reset() do
-    for implementation_module <- state_implementation_modules() do
-      implementation_module.reset(Driver)
-      implementation_module.reset(Passenger)
+    for implementation_module <- state_implementation_modules(),
+        state_record_module <- @state_record_modules do
+      implementation_module.reset(state_record_module)
     end
   end
 

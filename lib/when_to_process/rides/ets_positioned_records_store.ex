@@ -49,7 +49,8 @@ defmodule WhenToProcess.Rides.ETSPositionedRecordsStore do
   @impl Rides.GlobalState
   def list(record_module) do
     ms = Ex2ms.fun do
-      {_uuid, _record_latitude, _record_longitude, record} -> record
+      {_, _, _, record} -> record
+      {_, record} -> record
     end
 
     :ets.select(table_name(record_module), ms)
@@ -58,13 +59,14 @@ defmodule WhenToProcess.Rides.ETSPositionedRecordsStore do
   @impl Rides.GlobalState
   def count(record_module) do
     ms = Ex2ms.fun do
-      {_uuid, _record_latitude, _record_longitude, _record} -> true
+      row -> true
     end
 
     :ets.select_count(table_name(record_module), ms)
   end
 
   @impl Rides.GlobalState
+  # Only works when records have latitude and longitude
   def list_nearby(record_module, position, distance, filter_fn, count) do
     [
       [latitude_west, longitude_south],
@@ -72,7 +74,7 @@ defmodule WhenToProcess.Rides.ETSPositionedRecordsStore do
     ] = Geocalc.bounding_box(position, distance)
 
     ms = Ex2ms.fun do
-      {uuid, record_latitude, record_longitude, record} when record_latitude >= ^latitude_west and record_latitude <= ^latitude_east and record_longitude >= ^longitude_south and record_longitude <= ^longitude_north -> record
+      {_uuid, record_latitude, record_longitude, record} when record_latitude >= ^latitude_west and record_latitude <= ^latitude_east and record_longitude >= ^longitude_south and record_longitude <= ^longitude_north -> record
     end
 
     :ets.select(table_name(record_module), ms)
@@ -84,8 +86,8 @@ defmodule WhenToProcess.Rides.ETSPositionedRecordsStore do
   end
 
   @impl Rides.State
-  def get(record_module, uuid) do
-    case :ets.lookup(table_name(record_module), uuid) do
+  def get(record_module, key) do
+    case :ets.lookup(table_name(record_module), key) do
       [{_, _, _, record}] ->
         record
 
@@ -95,7 +97,7 @@ defmodule WhenToProcess.Rides.ETSPositionedRecordsStore do
 
   @impl Rides.State
   def reload(%record_module{} = record) do
-    get(record_module, record.uuid)
+    get(record_module, table_key(record))
   end
 
   defp traced_call(record_module, message) do
@@ -144,21 +146,33 @@ defmodule WhenToProcess.Rides.ETSPositionedRecordsStore do
 
   @impl true
   def handle_call({:update, record}, _from, record_module) do
-    :ets.update_element(table_name(record_module), record.uuid, [
-      {2, record.latitude},
-      {3, record.longitude},
-      {4, record}
-    ])
+    :ets.update_element(table_name(record_module), table_key(record), update_values(record))
 
     {:reply, {:ok, record}, record_module}
   end
 
+  defp update_values(%{latitude: _, longitude: _} = record) do
+    [
+      {2, record.latitude},
+      {3, record.longitude},
+      {4, record}
+    ]
+  end
+  defp update_values(record), do: [{2, record}]
+
+  defp ets_tuple(%{latitude: _, longitude: _} = record) do
+    {table_key(record), record.latitude, record.longitude, record}
+  end
+
   defp ets_tuple(record) do
-    {record.uuid, record.latitude, record.longitude, record}
+    {record.id, record}
   end
 
   def table_name(record_module) do
     :"#{__MODULE__}_#{record_module}"
   end
+
+  defp table_key(%{uuid: uuid}), do: uuid
+  defp table_key(%{id: id}), do: id
 end
 
