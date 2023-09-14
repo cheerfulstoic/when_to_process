@@ -1,0 +1,98 @@
+# Load Testing
+
+## Section
+
+```elixir
+# {:ok, _} = Application.ensure_all_started(:slipstream)
+```
+
+```elixir
+options = %{
+  # Something like ws://hostname.internal:8080
+  websocket_url_base: Application.get_env(:when_to_process, :client)[:ws_base],
+  drivers: %{
+    max_to_create: 300_000,
+    scale: 0.25
+  },
+  passengers: %{
+    max_to_create: 0,
+    scale: 1.5
+  }
+}
+
+slipstream_config = [
+  uri: "#{options.websocket_url_base}/socket/websocket",
+  heartbeat_interval_msec: 55_000,
+  mint_opts: [
+    log: true,
+    hostname: "when-to-process.internal",
+    protocols: [:http1],
+    transport_opts: [inet6: true]
+  ]
+]
+
+{options, slipstream_config}
+```
+
+## Creating Connections
+
+Here we setup connections continuously to push the server until it eventually breaks so that we can know *where* that happens.
+
+Because the server can handle a certain load more easily the connection creation process is ramped up quickly and then slowed down so that we can more easily tell the number of connections where things broke down.
+
+```elixir
+defmodule LoadTest do
+  def pause_between_creates(count_so_far, scale) do
+    if rem(count_so_far, pause_interval(count_so_far, scale)) == 0 do
+      IO.puts("PAUSE AT #{count_so_far}")
+      Process.sleep(1_000)
+    end
+  end
+
+  def pause_interval(index, scale) do
+    # case round(pause_interval_base(index) * scale) do
+    #  0 -> 1
+    #  other -> other
+    # end
+    # TEMP
+    10
+  end
+
+  def pause_interval_base(index) when index < 1_000, do: 10
+  def pause_interval_base(index) when index < 5_000, do: 7
+  def pause_interval_base(index) when index < 10_000, do: 5
+  def pause_interval_base(index) when index < 20_000, do: 3
+  def pause_interval_base(index) when index < 100_000, do: 1
+end
+
+create_drivers_task =
+  Task.async(fn ->
+    0..options.drivers.max_to_create
+    |> Enum.with_index()
+    |> Enum.each(fn {_, index} ->
+      {:ok, _driver_pid} =
+        WhenToProcess.Client.Driver.start_link(%{
+          slipstream_config: slipstream_config
+        })
+
+      LoadTest.pause_between_creates(index, options.drivers.scale)
+    end)
+  end)
+
+create_passengers_task =
+  Task.async(fn ->
+    0..options.passengers.max_to_create
+    |> Enum.with_index()
+    |> Enum.each(fn {_, index} ->
+      {:ok, _passenger_pid} =
+        WhenToProcess.Client.Passenger.start_link(%{
+          slipstream_config: slipstream_config
+        })
+        |> IO.inspect(label: :passenger_client_pid)
+
+      LoadTest.pause_between_creates(index, options.passengers.scale)
+    end)
+  end)
+
+Task.await_many([create_drivers_task, create_passengers_task], :infinity)
+```
