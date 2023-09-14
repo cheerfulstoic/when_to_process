@@ -45,7 +45,8 @@ defmodule WhenToProcessWeb.PassengerLive do
         <% end %>
 
         <%= if @passenger.current_ride do %>
-          <strong><%= @passenger.current_ride.driver.name %></strong> has accepted your request for a ride.
+          <strong><%= @passenger.current_ride.driver.name %></strong>
+          has accepted your request for a ride.
         <% end %>
         <div
           class="px-4 mt-0 w-full h-[80vh]"
@@ -55,9 +56,19 @@ defmodule WhenToProcessWeb.PassengerLive do
           data-longitude={city_longitude}
           data-zoom="12"
         >
-          <.live_component :if={@passenger.current_ride} module={Components.Marker} id="ride" record={@passenger.current_ride} />
+          <.live_component
+            :if={@passenger.current_ride}
+            module={Components.Marker}
+            id="ride"
+            record={@passenger.current_ride}
+          />
 
-          <.live_component :if={!@passenger.current_ride} module={Components.Marker} id="passenger" record={@passenger} />
+          <.live_component
+            :if={!@passenger.current_ride}
+            module={Components.Marker}
+            id="passenger"
+            record={@passenger}
+          />
 
           <div id="map-container" phx-update="ignore" class="w-full h-full">
             <div
@@ -112,7 +123,10 @@ defmodule WhenToProcessWeb.PassengerLive do
       |> WhenToProcess.Repo.preload([current_ride: :driver], force: true)
 
     # IO.puts("Subscribing to driver updates for ##{passenger.current_ride.driver.id}")
-    Phoenix.PubSub.subscribe(WhenToProcess.PubSub, "records:driver:#{passenger.current_ride.driver.id}")
+    Phoenix.PubSub.subscribe(
+      WhenToProcess.PubSub,
+      "records:driver:#{passenger.current_ride.driver.id}"
+    )
 
     {:noreply, assign(socket, :passenger, passenger)}
   end
@@ -121,17 +135,18 @@ defmodule WhenToProcessWeb.PassengerLive do
 
   # Should there be targetted broadcasts for just the passenger?
   def handle_info(
-    {:record_updated, %Rides.Passenger{id: passenger_id} = updated_passenger},
-    %{assigns: %{passenger: %{id: passenger_id}}} = socket
-  ) do
+        {:record_updated, %Rides.Passenger{id: passenger_id} = updated_passenger},
+        %{assigns: %{passenger: %{id: passenger_id}}} = socket
+      ) do
     # IO.inspect(updated_passenger, label: :PassengerLive_updated_passenger)
     {:noreply, assign(socket, :passenger, updated_passenger)}
   end
 
   def handle_info(
-    {:record_updated, %Rides.Driver{id: driver_id} = updated_driver},
-    %{assigns: %{passenger: %{current_ride: %{driver: %{id: driver_id}}} = passenger}} = socket
-  ) do
+        {:record_updated, %Rides.Driver{id: driver_id} = updated_driver},
+        %{assigns: %{passenger: %{current_ride: %{driver: %{id: driver_id}}} = passenger}} =
+          socket
+      ) do
     # IO.inspect(updated_driver, label: :PassengerLive_updated_driver)
     {:noreply, assign(socket, :passenger, put_in(passenger.current_ride.driver, updated_driver))}
   end

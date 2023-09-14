@@ -16,8 +16,11 @@ defmodule WhenToProcessWeb.Router do
     post "/drivers", WhenToProcessWeb.DriverController, :create
     post "/passengers", WhenToProcessWeb.PassengerController, :create
     get "/drivers/wait", WhenToProcessWeb.DriverController, :wait
+    get "/drivers/test", WhenToProcessWeb.DriverController, :test
     post "/setup_drivers/:count", WhenToProcessWeb.DriverController, :setup_drivers
   end
+
+  import Phoenix.LiveDashboard.Router
 
   scope "/", WhenToProcessWeb do
     pipe_through :browser
@@ -59,6 +62,8 @@ defmodule WhenToProcessWeb.Router do
     # get notifications ("You've received a $3.00 tip", )
     #
     # Earnings / stats summary (something which would have more than just a process' state)
+
+    live_dashboard "/dashboard", metrics: WhenToProcessWeb.Telemetry
   end
 
   # Other scopes may use custom stacks.
@@ -73,12 +78,11 @@ defmodule WhenToProcessWeb.Router do
     # If your application does not have an admins-only section yet,
     # you can use Plug.BasicAuth to set up some basic authentication
     # as long as you are also using SSL (which you should anyway).
-    import Phoenix.LiveDashboard.Router
 
     scope "/dev" do
       pipe_through :browser
 
-      live_dashboard "/dashboard", metrics: WhenToProcessWeb.Telemetry
+      # live_dashboard "/dashboard", metrics: WhenToProcessWeb.Telemetry
       forward "/mailbox", Plug.Swoosh.MailboxPreview
     end
   end

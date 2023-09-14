@@ -7,23 +7,24 @@ defmodule WhenToProcess.Application do
 
   @impl true
   def start(_type, _args) do
-    children = [
-      # Start the Telemetry supervisor
-      WhenToProcessWeb.Telemetry,
-      WhenToProcess.ProcessTelemetry,
-      # Start the Ecto repository
-      WhenToProcess.Repo,
-      # Start the PubSub system
-      {Phoenix.PubSub, name: WhenToProcess.PubSub},
-      # WhenToProcessWeb.Presence,
-      # Start Finch
-      {Finch, name: WhenToProcess.Finch},
-      # Start the Endpoint (http/https)
-      WhenToProcessWeb.Endpoint,
-      WhenToProcess.PromEx,
-      # Start a worker by calling: WhenToProcess.Worker.start_link(arg)
-      # {WhenToProcess.Worker, arg}
-    ] ++ WhenToProcess.Rides.child_specs()
+    children =
+      [
+        # Start the Telemetry supervisor
+        WhenToProcessWeb.Telemetry,
+        WhenToProcess.ProcessTelemetry,
+        # Start the Ecto repository
+        WhenToProcess.Repo,
+        # Start the PubSub system
+        {Phoenix.PubSub, name: WhenToProcess.PubSub},
+        # WhenToProcessWeb.Presence,
+        # Start Finch
+        {Finch, name: WhenToProcess.Finch},
+        # Start the Endpoint (http/https)
+        WhenToProcessWeb.Endpoint,
+        WhenToProcess.PromEx
+        # Start a worker by calling: WhenToProcess.Worker.start_link(arg)
+        # {WhenToProcess.Worker, arg}
+      ] ++ WhenToProcess.Rides.child_specs()
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options

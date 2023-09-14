@@ -9,7 +9,7 @@ config :when_to_process, WhenToProcess.Repo,
   username: "postgres",
   password: "when_to_process",
   hostname: "localhost",
-  port: 5434,
+  port: 5432,
   database: "when_to_process_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
   pool_size: 10

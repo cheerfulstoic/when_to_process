@@ -18,7 +18,8 @@ defmodule WhenToProcess.PubSub do
   end
 
   def broadcast_record_update(record) do
-    for topic <- ~w[records records:#{record_type(record)} records:#{record_type(record)}:#{record.id}] do
+    for topic <-
+          ~w[records records:#{record_type(record)} records:#{record_type(record)}:#{record.id}] do
       broadcast(topic, {:record_updated, record})
     end
 

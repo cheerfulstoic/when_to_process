@@ -17,12 +17,13 @@ defmodule WhenToProcess.Rides do
   def child_specs do
     state_implementation_modules()
     |> Enum.flat_map(fn module ->
-      Enum.map(@state_record_modules, & module.state_child_spec(&1))
+      Enum.map(@state_record_modules, &module.state_child_spec(&1))
     end)
     |> Enum.reject(&is_nil/1)
     |> Enum.uniq()
   end
-  def ready?() do
+
+  def ready? do
     state_implementation_modules()
     |> Enum.all?(fn module ->
       Enum.all?(@state_record_modules, fn state_record_module ->
@@ -54,7 +55,7 @@ defmodule WhenToProcess.Rides do
   end
 
   def get(module, uuid) do
-    individual_state_implementation_module().get(module, uuid)
+    IO.inspect(individual_state_implementation_module(), label: :blah).get(module, uuid)
   end
 
   def reload(record), do: global_state_implementation_module().reload(record)
@@ -71,10 +72,11 @@ defmodule WhenToProcess.Rides do
     update_record(driver, %{ready_for_passengers: false})
   end
 
-  def reject_ride_request(ride_request, driver), do: global_state_implementation_module().reject_ride_request(ride_request, driver)
+  def reject_ride_request(ride_request, driver),
+    do: global_state_implementation_module().reject_ride_request(ride_request, driver)
 
   # Exists to allow tests to reset state
-  def reset() do
+  def reset do
     for implementation_module <- state_implementation_modules(),
         state_record_module <- @state_record_modules do
       implementation_module.reset(state_record_module)
@@ -90,17 +92,27 @@ defmodule WhenToProcess.Rides do
     result = update_record(passenger, %{ride_request: %{}})
 
     with {:ok, passenger} <- result do
-      global_state_implementation_module().list_nearby(Driver, position(passenger), 2_000, (& &1.ready_for_passengers), 3)
+      global_state_implementation_module().list_nearby(
+        Driver,
+        position(passenger),
+        2_000,
+        & &1.ready_for_passengers,
+        3
+      )
       |> Enum.each(fn driver ->
         # IO.puts("broadcasting to driver #{driver.id}")
-        WhenToProcess.PubSub.broadcast("driver:#{driver.id}", {:new_ride_request, passenger.ride_request})
+        WhenToProcess.PubSub.broadcast(
+          "driver:#{driver.id}",
+          {:new_ride_request, passenger.ride_request}
+        )
       end)
 
       {:ok, passenger}
     end
   end
 
-  @spec accept_ride_request(RideRequest.t(), Driver.t()) :: {:ok, RideRequest.t()} | {:error, Ecto.Changeset.t()}
+  @spec accept_ride_request(RideRequest.t(), Driver.t()) ::
+          {:ok, RideRequest.t()} | {:error, Ecto.Changeset.t()}
   def accept_ride_request(ride_request, driver) do
     ride_request = reload(ride_request)
 
@@ -109,12 +121,15 @@ defmodule WhenToProcess.Rides do
       |> case do
         {:ok, ride_request} ->
           # IO.puts("Broadcasting to passenger:#{ride_request.passenger_id}")
-          WhenToProcess.PubSub.broadcast("passenger:#{ride_request.passenger_id}", {:ride_request_accepted, ride_request})
+          WhenToProcess.PubSub.broadcast(
+            "passenger:#{ride_request.passenger_id}",
+            {:ride_request_accepted, ride_request}
+          )
 
           {:ok, ride_request}
 
         {:error, failed_changeset} ->
-           {:error, error_from_changeset(failed_changeset)}
+          {:error, error_from_changeset(failed_changeset)}
       end
     end
   end
@@ -125,8 +140,10 @@ defmodule WhenToProcess.Rides do
       {:ok, updated_ride_request} ->
         WhenToProcess.PubSub.broadcast_record_update(updated_ride_request)
 
+        {:ok, updated_ride_request}
+
       {:error, failed_changeset} ->
-         {:error, error_from_changeset(failed_changeset)}
+        {:error, error_from_changeset(failed_changeset)}
     end
   end
 
@@ -145,14 +162,13 @@ defmodule WhenToProcess.Rides do
   end
 
   defp error_from_changeset(failed_changeset) do
-    Enum.map(failed_changeset.errors, fn
+    Enum.map_join(failed_changeset.errors, ", ", fn
       {:base, {message, _opts}} ->
         message
 
       {field, {message, _opts}} ->
         "#{field} #{message}"
     end)
-    |> Enum.join(", ")
   end
 
   defp update_record(%schema_mod{} = record, attrs) do

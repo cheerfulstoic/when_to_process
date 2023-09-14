@@ -12,7 +12,12 @@ defmodule WhenToProcess.Repo.Migrations.CreateRideRequests do
       timestamps()
     end
 
-    create(unique_index(:ride_requests, :passenger_id, where: "cancelled_at IS NULL", name: :ride_requests_passenger_id_cancelled_at_uniq_index))
+    create(
+      unique_index(:ride_requests, :passenger_id,
+        where: "cancelled_at IS NULL",
+        name: :ride_requests_passenger_id_cancelled_at_uniq_index
+      )
+    )
 
     execute(
       "CREATE TYPE ride_request_pings_response AS ENUM ('accepted', 'rejected')",

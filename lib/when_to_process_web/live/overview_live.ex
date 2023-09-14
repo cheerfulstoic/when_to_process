@@ -10,6 +10,7 @@ defmodule WhenToProcessWeb.OverviewLive do
     drivers =
       Rides.list(Rides.Driver)
       |> WhenToProcess.Repo.preload(:current_ride)
+
     passengers =
       Rides.list(Rides.Passenger)
       |> WhenToProcess.Repo.preload(:ride_request)
@@ -18,8 +19,8 @@ defmodule WhenToProcessWeb.OverviewLive do
 
     {:ok,
      socket
-     |> stream(:drivers, drivers, dom_id: &("driver-#{&1.uuid}"))
-     |> stream(:passengers, passengers, dom_id: &("passenger-#{&1.uuid}"))
+     |> stream(:drivers, drivers, dom_id: &"driver-#{&1.uuid}")
+     |> stream(:passengers, passengers, dom_id: &"passenger-#{&1.uuid}")
      |> assign(:city_position, WhenToProcess.Locations.city_position(:stockholm))}
   end
 
@@ -37,9 +38,19 @@ defmodule WhenToProcessWeb.OverviewLive do
         data-zoom="12"
       >
         <div id="markers" phx-update="stream">
-          <.live_component :for={{dom_id, driver} <- @streams.drivers} module={Components.Marker} id={dom_id} record={driver} />
+          <.live_component
+            :for={{dom_id, driver} <- @streams.drivers}
+            module={Components.Marker}
+            id={dom_id}
+            record={driver}
+          />
 
-          <.live_component :for={{dom_id, passenger} <- @streams.passengers} module={Components.Marker} id={dom_id} record={passenger} />
+          <.live_component
+            :for={{dom_id, passenger} <- @streams.passengers}
+            module={Components.Marker}
+            id={dom_id}
+            record={passenger}
+          />
         </div>
 
         <div id="map-container" phx-update="ignore" class="w-full h-full">
@@ -89,9 +100,11 @@ defmodule WhenToProcessWeb.OverviewLive do
   def preload_for(%Rides.Driver{} = driver) do
     WhenToProcess.Repo.preload(driver, :current_ride)
   end
+
   def preload_for(%Rides.Passenger{} = passenger) do
     WhenToProcess.Repo.preload(passenger, :ride_request)
   end
+
   def preload_for(record), do: record
 
   def stream_key(%Rides.Driver{}), do: :drivers

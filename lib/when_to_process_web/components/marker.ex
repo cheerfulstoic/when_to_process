@@ -22,7 +22,10 @@ defmodule WhenToProcessWeb.Components.Marker do
             id: driver.uuid,
             latitude: driver.latitude,
             longitude: driver.longitude,
-            metadata: %{ready_for_passengers: driver.ready_for_passengers, engaged: !!driver.current_ride}
+            metadata: %{
+              ready_for_passengers: driver.ready_for_passengers,
+              engaged: !!driver.current_ride
+            }
           }
 
         %Rides.Passenger{} = passenger ->
@@ -44,7 +47,7 @@ defmodule WhenToProcessWeb.Components.Marker do
             id: ride.id,
             latitude: ride.driver.latitude,
             longitude: ride.driver.longitude,
-            metadata: %{engaged: true},
+            metadata: %{engaged: true}
           }
       end
 
@@ -67,7 +70,4 @@ defmodule WhenToProcessWeb.Components.Marker do
     </div>
     """
   end
-
 end
-
-

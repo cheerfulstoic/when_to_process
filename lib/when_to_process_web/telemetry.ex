@@ -8,21 +8,16 @@ defmodule WhenToProcessWeb.Telemetry do
 
   @impl true
   def init(_arg) do
-
     children = [
-      # Telemetry poller will execute the given period measurements
-      # every 10_000ms. Learn more here: https://hexdocs.pm/telemetry_metrics
-      # {:telemetry_poller, measurements: periodic_measurements(), period: 10_000},
-      {:telemetry_poller, measurements: periodic_measurements(), period: 1_000},
+      {:telemetry_poller, measurements: periodic_measurements(), period: 5_000},
       # Add reporters as children of your supervision tree.
       # {Telemetry.Metrics.ConsoleReporter, metrics: metrics()}
       {TelemetryMetricsStatsd,
-        System.get_env("TELEMETRY_METRICS_STATSD_OPTS")
-        |>  Base.decode64!()
-        |> :erlang.binary_to_term()
-        |> IO.inspect(label: :opts)
-        |> Keyword.put(:metrics, metrics()),
-      }
+       System.get_env("TELEMETRY_METRICS_STATSD_OPTS")
+       |> Base.decode64!()
+       |> :erlang.binary_to_term()
+       |> IO.inspect(label: :opts)
+       |> Keyword.put(:metrics, metrics())}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
@@ -89,19 +84,36 @@ defmodule WhenToProcessWeb.Telemetry do
       summary("vm.total_run_queue_lengths.cpu"),
       summary("vm.total_run_queue_lengths.io"),
 
-      # Custom
-      summary("when_to_process.rides.processes_only.driver_information.start.duration",
-        tags: [:message_key],
-        unit: {:native, :millisecond}
-      ),
+      summary("vm.system_counts.process_count"),
+      summary("vm.system_counts.atom_count"),
+      summary("vm.system_counts.port_count"),
 
-      summary("when_to_process.rides.processes_only.driver_information.stop.duration",
-        tags: [:message_key],
+      # summary("when_to_process.statistics.run_queue"),
+      # summary("when_to_process.statistics.run_queue_lengths"),
+      summary("when_to_process.statistics.io_input"),
+      summary("when_to_process.statistics.io_output"),
+      summary("when_to_process.statistics.reductions_singe_last_call"),
+      summary("when_to_process.statistics.total_active_tasks"),
+      summary("when_to_process.statistics.total_active_tasks_all"),
+
+      # Slipstream
+      summary("slipstream.client.connect.stop.duration"),
+      summary("slipstream.client.join.stop.duration"),
+      summary("slipstream.client.handle_call.stop.duration"),
+      summary("slipstream.client.handle_cast.stop.duration"),
+      summary("slipstream.client.handle_info.stop.duration"),
+      summary("slipstream.client.handle_leave.stop.duration"),
+      summary("slipstream.client.handle_message.stop.duration"),
+      summary("slipstream.client.handle_reply.stop.duration"),
+      summary("slipstream.client.init.stop.duration"),
+
+      # Custom
+      summary("when_to_process.rides.genserver_call.stop.duration",
+        tags: [:implementation_module, :record_module, :message_key],
         unit: {:native, :millisecond}
       ),
 
       counter("when_to_process.process_crash.module", tags: [:reason, :module]),
-
       last_value("when_to_process.drivers.total"),
       last_value("when_to_process.passengers.total"),
       last_value("when_to_process.processes.module.driver_channels.total"),
@@ -112,36 +124,96 @@ defmodule WhenToProcessWeb.Telemetry do
       last_value("when_to_process.processes.module.cowboy_clear.total"),
       last_value("when_to_process.processes.module.bandit_delegating_handler.total"),
       last_value("when_to_process.processes.module.processes_only_driver_server.total"),
-
-      last_value("when_to_process.processes.process_info.ets_positioned_records_store_for_driver.message_queue_len"),
-      last_value("when_to_process.processes.process_info.ets_positioned_records_store_for_passenger.message_queue_len"),
-      last_value("when_to_process.processes.process_info.positioned_record_store_for_driver.message_queue_len"),
-      last_value("when_to_process.processes.process_info.positioned_record_store_for_passenger.message_queue_len")
+      last_value(
+        "when_to_process.processes.process_info.ets_positioned_records_store_for_driver.message_queue_len"
+      ),
+      last_value(
+        "when_to_process.processes.process_info.ets_positioned_records_store_for_passenger.message_queue_len"
+      ),
+      last_value(
+        "when_to_process.processes.process_info.positioned_record_store_for_driver.message_queue_len"
+      ),
+      last_value(
+        "when_to_process.processes.process_info.positioned_record_store_for_passenger.message_queue_len"
+      )
     ]
   end
+
+  def module_to_key(module), do: String.replace(Macro.to_string(module), ".", "_")
 
   defp periodic_measurements do
     [
       {__MODULE__, :record_count, [WhenToProcess.Rides.Driver, :drivers]},
       {__MODULE__, :record_count, [WhenToProcess.Rides.Passenger, :passengers]},
-      {__MODULE__, :measure_module_instance_count, [WhenToProcessWeb.DriverChannel, :driver_channels]},
-      {__MODULE__, :measure_module_instance_count, [WhenToProcessWeb.PassengerChannel, :passenger_channels]},
-      {__MODULE__, :measure_module_instance_count, [WhenToProcess.Rides.RecordStore, :RecordStore]},
-      {__MODULE__, :measure_module_instance_count, [WhenToProcess.Rides.ETSPositionedRecordsStore, :ETSPositionedRecordsStore]},
-      {__MODULE__, :measure_module_instance_count, [WhenToProcess.Rides.PartitionedRecordStore, :PartitionedRecordStore]},
-      {__MODULE__, :measure_module_instance_count, [:cowboy_clear]},
-      {__MODULE__, :measure_module_instance_count, [Bandit.DelegatingHandler, :bandit_delegating_handler]},
-      {__MODULE__, :process_info, [:"ets_positioned_records_store_for_Elixir.WhenToProcess.Rides.Driver", :ets_positioned_records_store_for_driver]},
-      {__MODULE__, :process_info, [:"ets_positioned_records_store_for_Elixir.WhenToProcess.Rides.Passenger", :ets_positioned_records_store_for_passenger]},
-      {__MODULE__, :process_info, [:"positioned_record_store_dynamic_supervisor_for_Elixir.WhenToProcess.Rides.Driver", :positioned_record_store_for_driver]},
-      {__MODULE__, :process_info, [:"positioned_record_store_dynamic_supervisor_for_Elixir.WhenToProcess.Rides.Passenger", :positioned_record_store_for_passenger]}
+      {__MODULE__, :measure_module_instance_counts,
+        [[
+          {WhenToProcessWeb.DriverChannel, :driver_channels},
+          {WhenToProcessWeb.PassengerChannel, :passenger_channels},
+          {WhenToProcess.Rides.RecordStore, :RecordStore},
+          {WhenToProcess.Rides.ETSPositionedRecordsStore, :ETSPositionedRecordsStore},
+          {WhenToProcess.Rides.PartitionedRecordStore, :PartitionedRecordStore},
+          {:cowboy_clear, :cowboy_clear},
+          {Bandit.DelegatingHandler, :bandit_delegating_handler},
+        ]]
+      },
+
+      {__MODULE__, :process_info,
+       [
+         :"ets_positioned_records_store_for_Elixir.WhenToProcess.Rides.Driver",
+         :ets_positioned_records_store_for_driver
+       ]},
+      {__MODULE__, :process_info,
+       [
+         :"ets_positioned_records_store_for_Elixir.WhenToProcess.Rides.Passenger",
+         :ets_positioned_records_store_for_passenger
+       ]},
+      {__MODULE__, :process_info,
+       [
+         :"positioned_record_store_dynamic_supervisor_for_Elixir.WhenToProcess.Rides.Driver",
+         :positioned_record_store_for_driver
+       ]},
+      {__MODULE__, :process_info,
+       [
+         :"positioned_record_store_dynamic_supervisor_for_Elixir.WhenToProcess.Rides.Passenger",
+         :positioned_record_store_for_passenger
+       ]},
+      {__MODULE__, :statistics, []}
     ]
   end
 
   def record_count(module, telemetry_name) do
     if WhenToProcess.Rides.ready?() do
-      :telemetry.execute([:when_to_process, telemetry_name], %{total: WhenToProcess.Rides.count(module)}, %{})
+      :telemetry.execute(
+        [:when_to_process, telemetry_name],
+        %{total: WhenToProcess.Rides.count(module)},
+        %{}
+      )
     end
+  end
+
+  def measure_module_instance_counts(specs) do
+    module_counts =
+      Process.list()
+      |> Enum.frequencies_by(fn pid ->
+        pid
+        |> Process.info()
+        |> get_in([:dictionary, :"$initial_call"])
+        |> case do
+          {found_mod, _, _} -> found_mod
+          {found_mod, _} -> found_mod
+          _other -> nil
+        end
+      end)
+
+    Enum.each(specs, fn
+      {module, telemetry_name} ->
+        :telemetry.execute(
+          [:when_to_process, :processes, :module, telemetry_name],
+          %{total: Map.get(module_counts, module, 0)},
+          %{}
+        )
+    end)
+
   end
 
   def measure_module_instance_count(module), do: measure_module_instance_count(module, module)
@@ -164,7 +236,11 @@ defmodule WhenToProcessWeb.Telemetry do
       end)
 
     # IO.inspect(total, label: telemetry_name)
-    :telemetry.execute([:when_to_process, :processes, :module, telemetry_name], %{total: total}, %{})
+    :telemetry.execute(
+      [:when_to_process, :processes, :module, telemetry_name],
+      %{total: total},
+      %{}
+    )
   end
 
   def process_info(process_name, telemetry_name) do
@@ -179,8 +255,31 @@ defmodule WhenToProcessWeb.Telemetry do
         |> Process.info(:message_queue_len)
         |> case do
           {:message_queue_len, length} ->
-            :telemetry.execute([:when_to_process, :processes, :process_info, telemetry_name], %{message_queue_len: length}, %{})
+            :telemetry.execute(
+              [:when_to_process, :processes, :process_info, telemetry_name],
+              %{message_queue_len: length},
+              %{}
+            )
         end
     end
+  end
+
+  def statistics do
+    {{:input, io_input}, {:output, io_output}} = :erlang.statistics(:io)
+    {_, reductions_since_last_call} = :erlang.statistics(:reductions)
+
+    :telemetry.execute(
+      [:when_to_process, :statistics],
+      %{
+        # run_queue: :erlang.statistics(:run_queue),
+        # run_queue_lengths: :erlang.statistics(:run_queue_lengths),
+        io_input: io_input,
+        io_output: io_output,
+        reductions_since_last_call: reductions_since_last_call,
+        total_active_tasks: :erlang.statistics(:total_active_tasks),
+        total_active_tasks_all: :erlang.statistics(:total_active_tasks_all)
+      },
+      %{}
+    )
   end
 end

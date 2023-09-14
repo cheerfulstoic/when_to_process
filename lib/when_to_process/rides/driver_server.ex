@@ -21,7 +21,8 @@ defmodule WhenToProcess.Rides.DriverServer do
       [{pid, _}] ->
         {:ok, GenServer.call(pid, {:update_driver, driver})}
 
-      _ -> {:error, "Driver not found"}
+      _ ->
+        {:error, "Driver not found"}
     end
   end
 
@@ -32,7 +33,6 @@ defmodule WhenToProcess.Rides.DriverServer do
   def get_driver(driver_uuid) do
     case Registry.lookup(:driver_server_registry, registry_key(driver_uuid)) do
       [{pid, _}] -> GenServer.call(pid, :get_driver)
-
       _ -> nil
     end
   end
@@ -64,5 +64,3 @@ defmodule WhenToProcess.Rides.DriverServer do
     {:reply, updated_driver, updated_driver}
   end
 end
-
-

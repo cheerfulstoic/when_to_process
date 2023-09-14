@@ -38,7 +38,6 @@ defmodule WhenToProcess.MixProject do
       # Temporary
       # See https://elixirforum.com/t/elixir-v1-15-0-released/56584/3
       {:ssl_verify_fun, "1.1.0", manager: :rebar3, runtime: false, override: true},
-
       {:phoenix, "~> 1.7.6", override: true},
       {:phoenix_ecto, "~> 4.4"},
       {:ecto_sql, "~> 3.6"},
@@ -57,7 +56,9 @@ defmodule WhenToProcess.MixProject do
       {:telemetry_poller, "~> 1.0"},
       {:gettext, "~> 0.20"},
       {:jason, "~> 1.2"},
-      {:plug_cowboy, "~> 2.5"},
+      {:plug_cowboy, "~> 2.6.1"},
+      {:cowboy, "~> 2.10.0", override: true},
+      {:ranch, "~> 2.1.0", override: true},
 
       # Non-default:
       {:faker, "~> 0.17"},
@@ -69,12 +70,15 @@ defmodule WhenToProcess.MixProject do
       {:httpoison, "~> 2.0"},
       {:mint_web_socket, "~> 1.0"},
       {:ex2ms, "~> 1.6.1"},
-      {:telemetry_metrics_statsd,  github: "cheerfulstoic/telemetry_metrics_statsd"},
+      {:telemetry_metrics_statsd, github: "cheerfulstoic/telemetry_metrics_statsd"},
       {:prom_ex, "~> 1.8.0"},
       {:cowboy_telemetry, "~> 0.4.0"},
-
       {:bandit, "~> 1.0-pre"},
+      {:kino, "~> 0.9.4"},
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:rexbug, ">= 1.0.0"},
 
+      {:replbug, "~> 0.1"},
 
       # Test
       {:ex_machina, "~> 2.7.0", only: :test},

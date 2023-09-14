@@ -19,7 +19,7 @@ defmodule WhenToProcess.Rides.PositionedRecordsStore do
   def state_child_spec(record_module) do
     %{
       id: name(record_module),
-      start: {__MODULE__, :start_link, [record_module]},
+      start: {__MODULE__, :start_link, [record_module]}
     }
   end
 
@@ -56,7 +56,8 @@ defmodule WhenToProcess.Rides.PositionedRecordsStore do
   def count(record_module), do: traced_call(record_module, :count)
 
   @impl Rides.GlobalState
-  def list_nearby(record_module, position, distance, filter_fn, count), do: traced_call(record_module, {:list_nearby, position, distance, filter_fn, count})
+  def list_nearby(record_module, position, distance, filter_fn, count),
+    do: traced_call(record_module, {:list_nearby, position, distance, filter_fn, count})
 
   @impl Rides.State
   def get(record_module, uuid), do: traced_call(record_module, {:get, uuid})
@@ -67,16 +68,22 @@ defmodule WhenToProcess.Rides.PositionedRecordsStore do
   end
 
   defp traced_call(record_module, message) do
-    message_key = "#{message_key(message)}"
+    metadata = %{
+      implementation_module: WhenToProcessWeb.Telemetry.module_to_key(__MODULE__),
+      record_module: WhenToProcessWeb.Telemetry.module_to_key(record_module),
+      message_key: "#{message_key(message)}"
+    }
+
     :telemetry.span(
-      [:when_to_process, :rides, :positioned_records_store, record_module],
-      %{message_key: message_key},
+      [:when_to_process, :rides, :genserver_call],
+      metadata,
       fn ->
         result = GenServer.call(name(record_module), message)
-        {result, %{message_key: message_key}}
+        {result, metadata}
       end
     )
   end
+
 
   defp name(record_module) do
     :"positioned_records_store_for_#{record_module}"
@@ -128,9 +135,9 @@ defmodule WhenToProcess.Rides.PositionedRecordsStore do
       record_map
       |> Enum.filter(fn {_uuid, record} ->
         record.latitude >= latitude_west &&
-        record.latitude <= latitude_east &&
-        record.longitude >= longitude_south &&
-        record.longitude <= longitude_north
+          record.latitude <= latitude_east &&
+          record.longitude >= longitude_south &&
+          record.longitude <= longitude_north
       end)
       |> Enum.map(fn {_uuid, record} -> record end)
       # |> Enum.filter(& &1.ready_for_passengers)
@@ -161,6 +168,4 @@ defmodule WhenToProcess.Rides.PositionedRecordsStore do
   def handle_call(:reset, _from, _record_map) do
     {:reply, true, %{}}
   end
-
 end
-

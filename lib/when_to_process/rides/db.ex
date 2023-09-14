@@ -27,7 +27,10 @@ defmodule WhenToProcess.Rides.DB do
   def get(record_module, uuid), do: Repo.get_by(record_module, uuid: uuid)
 
   @impl Rides.State
-  def reload(record), do: Repo.reload(record)
+  def reload(%record_module{} = record) do
+    Repo.reload(record)
+    |> Repo.preload(record_module.__schema__(:associations))
+  end
 
   @impl Rides.State
   def reset(_record_module) do
@@ -47,7 +50,14 @@ defmodule WhenToProcess.Rides.DB do
       driver in record_module,
       where: fragment("? BETWEEN ? AND ?", driver.latitude, ^latitude_west, ^latitude_east),
       where: fragment("? BETWEEN ? AND ?", driver.longitude, ^longitude_south, ^longitude_north),
-      order_by: fragment("pow(? - ?, 2) + pow(? - ?, 2)", ^latitude, driver.latitude, ^longitude, driver.longitude),
+      order_by:
+        fragment(
+          "pow(? - ?, 2) + pow(? - ?, 2)",
+          ^latitude,
+          driver.latitude,
+          ^longitude,
+          driver.longitude
+        ),
       limit: ^count
     )
     |> Repo.all()

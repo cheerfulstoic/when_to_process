@@ -34,13 +34,20 @@ defmodule WhenToProcessWeb.PassengerChannel do
 
       ride_request ->
         case Rides.cancel_request(ride_request) do
-          {:ok, passenger} ->
-            {:reply, :ok, assign(socket, :passenger, passenger)}
+          {:ok, updated_ride_request} ->
+            {
+              :reply,
+              :ok,
+              assign(
+                socket,
+                :passenger,
+                Map.put(socket.assigns.passenger, :ride_request, updated_ride_request)
+              )
+            }
 
           {:error, _} ->
             {:reply, {:error, %{}}, socket}
         end
     end
   end
-
 end

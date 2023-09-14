@@ -12,8 +12,7 @@ defmodule WhenToProcess.Rides.Passenger do
     field :longitude, :float
 
     # TODO: Rename to `current_ride_request`
-    has_one :ride_request, RideRequest,
-      where: [cancelled_at: nil]
+    has_one :ride_request, RideRequest, where: [cancelled_at: nil]
 
     has_one :current_ride, through: [:ride_request, :created_ride]
 

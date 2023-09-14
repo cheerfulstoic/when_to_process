@@ -11,16 +11,17 @@ defmodule WhenToProcessWeb.DriverLive do
 
     {:ok, driver} =
       if connected?(socket) do
-          IO.puts("CONNECTED")
+        IO.puts("CONNECTED")
+
         case WhenToProcess.Locations.random_location(:stockholm) do
           {:ok, position} ->
-        IO.puts("B!")
+            IO.puts("B!")
             Rides.create(Rides.Driver, %{name: Faker.Person.En.name(), position: position})
 
             # Handle error
         end
       else
-          IO.puts("NOT CONNECTED")
+        IO.puts("NOT CONNECTED")
         {:ok, nil}
       end
 
@@ -52,7 +53,12 @@ defmodule WhenToProcessWeb.DriverLive do
         <% end %>
 
         <%= if @ride_request && !@ride_request.ride do %>
-          <.modal id="ride-request-modal" on_confirm={JS.push("accept")} on_cancel={JS.push("reject")} show={true}>
+          <.modal
+            id="ride-request-modal"
+            on_confirm={JS.push("accept")}
+            on_cancel={JS.push("reject")}
+            show={true}
+          >
             <h1>Ride Request</h1>
 
             <p>Name: <%= @ride_request.passenger.name %></p>
@@ -165,10 +171,9 @@ defmodule WhenToProcessWeb.DriverLive do
     driver = preload_driver(socket.assigns.driver, force: true)
 
     {:noreply,
-      socket
-      |> assign(:driver, driver)
-      |> assign(:ride_request, ride_request)
-    }
+     socket
+     |> assign(:driver, driver)
+     |> assign(:ride_request, ride_request)}
   end
 
   @impl true
@@ -192,9 +197,9 @@ defmodule WhenToProcessWeb.DriverLive do
 
   # Should there be targetted broadcasts for just the driver?
   def handle_info(
-    {:record_updated, %Rides.Driver{id: driver_id} = updated_driver},
-    %{assigns: %{driver: %{id: driver_id}}} = socket
-  ) do
+        {:record_updated, %Rides.Driver{id: driver_id} = updated_driver},
+        %{assigns: %{driver: %{id: driver_id}}} = socket
+      ) do
     IO.inspect(updated_driver, label: :DriverLive_updated_driver)
     {:noreply, assign(socket, :driver, preload_driver(updated_driver))}
   end

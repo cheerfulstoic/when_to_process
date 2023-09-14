@@ -11,11 +11,32 @@ defmodule WhenToProcessWeb.Endpoint do
     same_site: "Lax"
   ]
 
-  socket "/socket", WhenToProcessWeb.UserSocket,
-    websocket: true,
-    longpoll: false
+  defmodule BrianTest do
+    import Plug.Conn
 
-  socket "/live", Phoenix.LiveView.Socket, websocket: [connect_info: [session: @session_options]]
+    def init(options) do
+      # initialize options
+      options
+    end
+
+    def call(conn, _opts) do
+      get_req_header(conn, "host")
+      |> IO.inspect(label: :host_header)
+
+      conn
+    end
+
+  end
+
+  plug BrianTest
+
+  socket "/socket", WhenToProcessWeb.UserSocket,
+    websocket: [check_origin: false, connect_info: [session: @session_options]],
+    longpoll: [check_origin: false, connect_info: [session: @session_options]]
+
+  socket "/live", Phoenix.LiveView.Socket,
+    websocket: [check_origin: false, connect_info: [session: @session_options]],
+    longpoll: [check_origin: false, connect_info: [session: @session_options]]
 
   # Serve at "/" the static files from "priv/static" directory.
   #

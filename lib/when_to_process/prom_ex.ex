@@ -32,4 +32,3 @@ defmodule WhenToProcess.PromEx do
     ]
   end
 end
-

@@ -18,18 +18,20 @@ defmodule WhenToProcessWeb.DriverController do
     drivers = Rides.list(Rides.Driver)
 
     count = String.to_integer(count)
+
     drivers =
       if length(drivers) < count do
-        drivers ++ Enum.map((length(drivers)..count), fn _ ->
-          {:ok, driver} = create_new_driver()
+        drivers ++
+          Enum.map(length(drivers)..count, fn _ ->
+            {:ok, driver} = create_new_driver()
 
-          driver
-        end)
+            driver
+          end)
       else
         drivers
       end
 
-    json(conn, Enum.map(drivers, & %{uuid: &1.uuid}))
+    json(conn, Enum.map(drivers, &%{uuid: &1.uuid}))
   end
 
   # Test action
@@ -39,6 +41,12 @@ defmodule WhenToProcessWeb.DriverController do
     json(conn, %{})
   end
 
+  def test(conn, %{}) do
+    limit = :erlang.system_info(:port_limit)
+
+    json(conn, %{limit: limit})
+  end
+
   defp create_new_driver do
     case WhenToProcess.Locations.random_location(:stockholm) do
       {:ok, position} ->
@@ -46,4 +54,3 @@ defmodule WhenToProcessWeb.DriverController do
     end
   end
 end
-

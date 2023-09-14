@@ -24,7 +24,15 @@ if System.get_env("LOG_LEVEL") do
   config :logger, level: String.to_atom(System.get_env("LOG_LEVEL"))
 end
 
-config :when_to_process, :client, http_base: "http://when-to-process.internal:8080", ws_base: "ws://when-to-process.internal:8080"
+config :when_to_process, :client,
+  # http_base: "http://when-to-process.internal:8080",
+  # ws_base: "ws://when-to-process.internal:8080",
+  http_base: "http://[fdaa:2:cc9c:a7b:e9:d16d:ba48:2]:8080",
+  ws_base: "ws://[fdaa:2:cc9c:a7b:e9:d16d:ba48:2]:8080"
+  # http_base: "http://localhost:4050",
+  # ws_base: "ws://localhost:4050"
+
+# config :when_to_process, :client, http_base: "http://localhost:4000", ws_base: "wss://localhost:4000"
 # config :when_to_process, :client, http_base: "https://when-to-process.fly.dev", ws_base: "wss://when-to-process.fly.dev"
 
 # RIDES_IMPLEMENTATION_MODULE should be one of:
@@ -37,14 +45,15 @@ individual_state_implementation_module = System.get_env("RIDES_INDIVIDUAL_IMPLEM
 
 if global_state_implementation_module && individual_state_implementation_module do
   config :when_to_process, WhenToProcess.Rides,
-    global_state_implementation_module: String.to_atom("Elixir.#{global_state_implementation_module}"),
-    individual_state_implementation_module: String.to_atom("Elixir.#{individual_state_implementation_module}")
+    global_state_implementation_module:
+      String.to_atom("Elixir.#{global_state_implementation_module}"),
+    individual_state_implementation_module:
+      String.to_atom("Elixir.#{individual_state_implementation_module}")
 else
   raise "RIDES_GLOBAL_IMPLEMENTATION_MODULE and RIDES_INDIVIDUAL_IMPLEMENTATION_MODULE environment variables required!"
 end
 
 config :when_to_process, WhenToProcess.Rides.PartitionedRecordStore, partitions: 4
-
 
 if config_env() == :prod do
   # {grafana_host, grafana_token} = {
@@ -78,7 +87,9 @@ if config_env() == :prod do
     # ssl: true,
     url: database_url,
     pool_size: String.to_integer(System.get_env("POOL_SIZE") || "10"),
-    socket_options: maybe_ipv6
+    socket_options: maybe_ipv6,
+    queue_target: String.to_integer(System.get_env("DB_QUEUE_TARGET", "50")),
+    queue_interval: String.to_integer(System.get_env("DB_QUEUE_TARGET", "1000"))
 
   # The secret key base is used to sign/encrypt cookies and other secrets.
   # A default value is used in config/dev.exs and config/test.exs but you
@@ -102,7 +113,12 @@ if config_env() == :prod do
       # Set it to  {0, 0, 0, 0, 0, 0, 0, 1} for local network only access.
       # See the documentation on https://hexdocs.pm/plug_cowboy/Plug.Cowboy.html
       # for details about using IPv6 vs IPv4 and loopback vs public addresses.
+      # ip: "0.0.0.0",
       ip: {0, 0, 0, 0, 0, 0, 0, 0},
+
+      # ip: {0, 0, 0, 0, 0, 0, 0, 1},
+      # ip: {64938, 2, 52380, 2683, 233, 53613, 47688, 2},
+      # ip: "fdaa:2:cc9c:a7b:e9:d16d:ba48:2",
       port: port
     ],
     secret_key_base: secret_key_base

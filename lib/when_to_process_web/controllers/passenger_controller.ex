@@ -18,4 +18,3 @@ defmodule WhenToProcessWeb.PassengerController do
     end
   end
 end
-

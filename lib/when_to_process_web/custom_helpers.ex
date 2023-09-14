@@ -37,7 +37,6 @@ defmodule WhenToProcessWeb.CustomHelpers do
   def passenger_marker(assigns) do
     EctoRequireAssociations.ensure!(assigns.passenger, [:ride_request])
 
-
     ~H"""
     <div
       class="marker"

@@ -18,10 +18,9 @@ defmodule WhenToProcess.Rides.RideRequest do
 
   def changeset_for_insert(attrs) do
     attrs =
-      attrs =
-        attrs
-        |> Map.put(:uuid, Ecto.UUID.generate())
-        |> Map.put_new(:created_ride, nil)
+      attrs
+      |> Map.put(:uuid, Ecto.UUID.generate())
+      |> Map.put_new(:created_ride, nil)
 
     %__MODULE__{}
     |> changeset(Map.put(attrs, :uuid, Ecto.UUID.generate()))
@@ -34,7 +33,11 @@ defmodule WhenToProcess.Rides.RideRequest do
     |> validate_required([:uuid])
     |> cast_assoc(:passenger)
     |> cast_assoc(:created_ride)
-    |> unique_constraint(:passenger_id, name: :ride_requests_passenger_id_cancelled_at_uniq_index, error_key: :base, message: "Passenger cannot have multiple open ride requests")
+    |> unique_constraint(:passenger_id,
+      name: :ride_requests_passenger_id_cancelled_at_uniq_index,
+      error_key: :base,
+      message: "Passenger cannot have multiple open ride requests"
+    )
   end
 
   def check_can_be_accepted(%{cancelled_at: value}) when not is_nil(value) do
@@ -52,6 +55,4 @@ defmodule WhenToProcess.Rides.RideRequest do
         :ok
     end
   end
-
-  def check_can_be_accepted(_ride_request), do: :ok
 end

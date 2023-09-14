@@ -20,9 +20,7 @@ defmodule WhenToProcess.Rides.PartitionedRecordStore do
   @impl Rides.State
   def state_child_spec(record_module) do
     {PartitionSupervisor,
-      child_spec: child_spec(record_module),
-      name: supervisor_name(record_module)
-    }
+     child_spec: child_spec(record_module), name: supervisor_name(record_module)}
   end
 
   def child_spec(record_module) do
@@ -72,17 +70,21 @@ defmodule WhenToProcess.Rides.PartitionedRecordStore do
   end
 
   defp traced_call(record_module, uuid, message) do
-    message_key = "#{message_key(message)}"
+    metadata = %{
+      implementation_module: WhenToProcessWeb.Telemetry.module_to_key(__MODULE__),
+      record_module: WhenToProcessWeb.Telemetry.module_to_key(record_module),
+      message_key: "#{message_key(message)}"
+    }
+
     :telemetry.span(
-      [:when_to_process, :rides, :partitioned_positioned_record_store, record_module],
-      %{message_key: message_key},
+      [:when_to_process, :rides, :genserver_call],
+      metadata,
       fn ->
         result = GenServer.call(via_name(record_module, uuid), message)
-        {result, %{message_key: message_key}}
+        {result, metadata}
       end
     )
   end
-
 
   @impl true
   def init(_record_module) do
@@ -129,8 +131,7 @@ defmodule WhenToProcess.Rides.PartitionedRecordStore do
   def message_key(message) when is_tuple(message), do: elem(message, 0)
   def message_key(message) when is_atom(message), do: message
 
-#   defp config do
-#     Application.get_env(:when_to_process, __MODULE__)
-#   end
+  #   defp config do
+  #     Application.get_env(:when_to_process, __MODULE__)
+  #   end
 end
-

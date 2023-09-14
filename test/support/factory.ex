@@ -37,10 +37,10 @@ defmodule WhenToProcess.Factory do
   end
 
   defp generate_latitude do
-    (:rand.uniform() * 180) - 90
+    :rand.uniform() * 180 - 90
   end
 
   defp generate_longitude do
-    (:rand.uniform() * 360) - 180
+    :rand.uniform() * 360 - 180
   end
 end

@@ -9,7 +9,8 @@ defmodule WhenToProcess.Rides.RideRequestTest do
     test "previously cancelled request" do
       ride_request = build(:ride_request, cancelled_at: DateTime.utc_now())
 
-      assert {:error, "This ride request cannot be accepted because it was cancelled"} = RideRequest.check_can_be_accepted(ride_request)
+      assert {:error, "This ride request cannot be accepted because it was cancelled"} =
+               RideRequest.check_can_be_accepted(ride_request)
     end
 
     test "can be accepted" do
@@ -32,5 +33,3 @@ defmodule WhenToProcess.Rides.RideRequestTest do
     end
   end
 end
-
-

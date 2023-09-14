@@ -16,7 +16,7 @@ defmodule WhenToProcess.Rides.ETSPositionedRecordsStore do
   def state_child_spec(record_module) do
     %{
       id: name(record_module),
-      start: {__MODULE__, :start_link, [record_module]},
+      start: {__MODULE__, :start_link, [record_module]}
     }
   end
 
@@ -48,19 +48,21 @@ defmodule WhenToProcess.Rides.ETSPositionedRecordsStore do
 
   @impl Rides.GlobalState
   def list(record_module) do
-    ms = Ex2ms.fun do
-      {_, _, _, record} -> record
-      {_, record} -> record
-    end
+    ms =
+      Ex2ms.fun do
+        {_, _, _, record} -> record
+        {_, record} -> record
+      end
 
     :ets.select(table_name(record_module), ms)
   end
 
   @impl Rides.GlobalState
   def count(record_module) do
-    ms = Ex2ms.fun do
-      row -> true
-    end
+    ms =
+      Ex2ms.fun do
+        row -> true
+      end
 
     :ets.select_count(table_name(record_module), ms)
   end
@@ -73,9 +75,13 @@ defmodule WhenToProcess.Rides.ETSPositionedRecordsStore do
       [latitude_east, longitude_north]
     ] = Geocalc.bounding_box(position, distance)
 
-    ms = Ex2ms.fun do
-      {_uuid, record_latitude, record_longitude, record} when record_latitude >= ^latitude_west and record_latitude <= ^latitude_east and record_longitude >= ^longitude_south and record_longitude <= ^longitude_north -> record
-    end
+    ms =
+      Ex2ms.fun do
+        {_uuid, record_latitude, record_longitude, record}
+        when record_latitude >= ^latitude_west and record_latitude <= ^latitude_east and
+               record_longitude >= ^longitude_south and record_longitude <= ^longitude_north ->
+          record
+      end
 
     :ets.select(table_name(record_module), ms)
     |> Enum.filter(filter_fn)
@@ -94,7 +100,8 @@ defmodule WhenToProcess.Rides.ETSPositionedRecordsStore do
       [{_, record}] ->
         record
 
-      _ -> nil
+      _ ->
+        nil
     end
   end
 
@@ -104,13 +111,18 @@ defmodule WhenToProcess.Rides.ETSPositionedRecordsStore do
   end
 
   defp traced_call(record_module, message) do
-    message_key = "#{message_key(message)}"
+    metadata = %{
+      implementation_module: WhenToProcessWeb.Telemetry.module_to_key(__MODULE__),
+      record_module: WhenToProcessWeb.Telemetry.module_to_key(record_module),
+      message_key: "#{message_key(message)}"
+    }
+
     :telemetry.span(
-      [:when_to_process, :rides, :ets_positioned_records_store, record_module],
-      %{message_key: message_key},
+      [:when_to_process, :rides, :genserver_call],
+      metadata,
       fn ->
         result = GenServer.call(name(record_module), message)
-        {result, %{message_key: message_key}}
+        {result, metadata}
       end
     )
   end
@@ -161,6 +173,7 @@ defmodule WhenToProcess.Rides.ETSPositionedRecordsStore do
       {4, record}
     ]
   end
+
   defp update_values(record), do: [{2, record}]
 
   defp ets_tuple(%{latitude: _, longitude: _} = record) do
@@ -178,4 +191,3 @@ defmodule WhenToProcess.Rides.ETSPositionedRecordsStore do
   defp table_key(%{uuid: uuid}), do: uuid
   defp table_key(%{id: id}), do: id
 end
-

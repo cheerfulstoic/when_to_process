@@ -1,5 +1,5 @@
 defmodule WhenToProcessWeb.UserSocket do
-  use Phoenix.Socket
+  use Phoenix.Socket, partitions: 10
 
   # A Socket handler
   #

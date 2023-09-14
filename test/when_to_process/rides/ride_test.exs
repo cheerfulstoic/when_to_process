@@ -8,4 +8,3 @@ defmodule WhenToProcess.Rides.RideTest do
   #   end
   # end
 end
-

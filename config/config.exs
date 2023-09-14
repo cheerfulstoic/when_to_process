@@ -18,11 +18,22 @@ config :when_to_process, WhenToProcessWeb.Endpoint,
     layout: false
   ],
   pubsub_server: WhenToProcess.PubSub,
-  # adapter: Bandit.PhoenixAdapter,
+  adapter: Bandit.PhoenixAdapter,
   live_view: [signing_salt: "mjvB+Zye"],
   http: [
-    # For testing purposes
-    transport_options: [num_acceptors: 300, max_connections: :infinity]
+  # For testing purposes
+  # COWBOY
+    # transport_options: [
+    #   handshake_timeout: 20_000,
+    #   num_acceptors: 2_000,
+    #   num_listen_sockets: 5,
+    #   max_connections: :infinity
+    # ]
+  # BANDIT
+    thousand_island_options: [
+      num_acceptors: 1_000,
+      num_connections: 50_000
+    ]
   ]
 
 # Configures the mailer

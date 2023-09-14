@@ -15,7 +15,6 @@ config :when_to_process, WhenToProcess.Repo,
   # non-DB strategies
   migration_lock: nil
 
-
 # For development, we disable any cache and enable
 # debugging and code reloading.
 #
@@ -88,4 +87,3 @@ config :phoenix, :plug_init_mode, :runtime
 
 # Disable swoosh api client as it is only required for production adapters.
 config :swoosh, :api_client, false
-

@@ -40,11 +40,10 @@ defmodule WhenToProcess.Client.Passenger do
         # send_adjust_bearing()
 
         {:ok,
-          socket
-          |> assign(:uuid, uuid)
-          |> assign(:current_status, :idle)
-          |> join("passenger:#{uuid}")
-        }
+         socket
+         |> assign(:uuid, uuid)
+         |> assign(:current_status, :idle)
+         |> join("passenger:#{uuid}")}
 
       {:error, value} ->
         IO.inspect(value, label: :error_value)
@@ -63,10 +62,9 @@ defmodule WhenToProcess.Client.Passenger do
     |> case do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
         {:ok,
-          body
-          |> Jason.decode!()
-          |> Map.get("uuid")
-        }
+         body
+         |> Jason.decode!()
+         |> Map.get("uuid")}
 
       {:ok, %HTTPoison.Response{body: body}} ->
         {:error, body}
@@ -91,6 +89,7 @@ defmodule WhenToProcess.Client.Passenger do
       end
 
     IO.puts("Sending #{message_to_send}")
+
     case push_handled(socket, "passenger:#{uuid}", message_to_send, %{}) do
       {:ok, socket} ->
         IO.puts("#{message_to_send} SUCCESS")
@@ -114,10 +113,10 @@ defmodule WhenToProcess.Client.Passenger do
 
         {:ok, socket}
 
-     {:error, message} = error ->
-       IO.puts("COULD NOT PUSH #{event} to #{topic}!!! #{inspect(message)}")
+      {:error, message} = error ->
+        IO.puts("COULD NOT PUSH #{event} to #{topic}!!! #{inspect(message)}")
 
-       error
+        error
     end
   end
 
@@ -135,4 +134,3 @@ defmodule WhenToProcess.Client.Passenger do
     :rand.uniform(delay - floor) + floor
   end
 end
-

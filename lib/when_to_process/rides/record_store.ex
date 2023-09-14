@@ -67,13 +67,18 @@ defmodule WhenToProcess.Rides.RecordStore do
   end
 
   defp traced_call(record_module, uuid, message) do
-    message_key = "#{message_key(message)}"
+    metadata = %{
+      implementation_module: WhenToProcessWeb.Telemetry.module_to_key(__MODULE__),
+      record_module: WhenToProcessWeb.Telemetry.module_to_key(record_module),
+      message_key: "#{message_key(message)}"
+    }
+
     :telemetry.span(
-      [:when_to_process, :rides, :positioned_record_store, record_module],
-      %{message_key: message_key},
+      [:when_to_process, :rides, :genserver_call],
+      metadata,
       fn ->
         result = GenServer.call(name(record_module, uuid), message)
-        {result, %{message_key: message_key}}
+        {result, metadata}
       end
     )
   end
@@ -112,4 +117,3 @@ defmodule WhenToProcess.Rides.RecordStore do
   def message_key(message) when is_tuple(message), do: elem(message, 0)
   def message_key(message) when is_atom(message), do: message
 end
-
