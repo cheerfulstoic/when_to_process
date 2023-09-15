@@ -194,8 +194,6 @@ defmodule WhenToProcess.Rides.PartitionedRecordStore do
         record.longitude >= longitude_south &&
         record.longitude <= longitude_north
     end)
-    |> Enum.map(fn {_uuid, record} -> record end)
-    # |> Enum.filter(& &1.ready_for_passengers)
     |> Enum.filter(filter_fn)
     |> Enum.sort_by(fn record ->
       Rides.sort_distance(position, Rides.position(record))
