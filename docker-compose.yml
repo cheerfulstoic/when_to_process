@@ -1,3 +1,5 @@
+version: '3'
+
 services:
   db:
     image: postgres
@@ -9,14 +11,33 @@ services:
 
   graphite:
     image: graphiteapp/graphite-statsd
+    restart: always
+    volumes:
+      - ./docker/grafana/conf:/opt/graphite/conf
+      - ./docker/grafana/storage:/opt/graphite/storage
     ports:
       - 80:80
       - 8080:8080
       - 8125:8125
       - 8125:8125/udp
 
+  local_graphite:
+    image: graphiteapp/graphite-statsd
+    restart: always
+    volumes:
+      - ./docker/local_graphite/conf:/opt/graphite/conf
+      - ./docker/local_graphite/storage:/opt/graphite/storage
+    ports:
+      - 81:80
+      - 8081:8080
+      - 8126:8125
+      - 8126:8125/udp
+
   grafana:
     image: grafana/grafana
     ports:
       - "3000:3000"
+    volumes:
+      - ./docker/grafana/var_lib_grafana:/var/lib/grafana
+
 
