@@ -188,7 +188,7 @@ defmodule WhenToProcess.Rides.PartitionedRecordStore do
     ] = Geocalc.bounding_box(position, distance)
 
     records
-    |> Enum.filter(fn {_uuid, record} ->
+    |> Enum.filter(fn record ->
       record.latitude >= latitude_west &&
         record.latitude <= latitude_east &&
         record.longitude >= longitude_south &&
