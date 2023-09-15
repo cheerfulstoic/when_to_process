@@ -76,6 +76,7 @@ defmodule WhenToProcess.Rides.PartitionedRecordStore do
     |> Task.async_stream(fn pid ->
       traced_call(pid, :list)
     end)
+    |> Enum.map(fn {:ok, value} -> value end)
     |> Enum.concat()
   end
 
@@ -85,6 +86,7 @@ defmodule WhenToProcess.Rides.PartitionedRecordStore do
     |> Task.async_stream(fn pid ->
       traced_call(pid, :count)
     end)
+    |> Enum.map(fn {:ok, value} -> value end)
     |> Enum.sum()
   end
 
@@ -94,6 +96,7 @@ defmodule WhenToProcess.Rides.PartitionedRecordStore do
     |> Task.async_stream(fn pid ->
       traced_call(pid, {:list_nearby, position, distance, filter_fn, count})
     end)
+    |> Enum.map(fn {:ok, value} -> value end)
     |> Enum.concat()
     |> get_nearby(position, distance, filter_fn, count)
   end
