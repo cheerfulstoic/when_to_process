@@ -43,7 +43,7 @@ defmodule WhenToProcess.Rides.PartitionedRecordStore do
   end
 
   @impl Rides.State
-  def get(record_module, uuid), do: traced_call(record_module, uuid, {:get, uuid})
+  def get(record_module, uuid), do: traced_record_call(record_module, uuid, {:get, uuid})
 
   @impl Rides.State
   def reload(%record_module{} = record) do
@@ -57,7 +57,7 @@ defmodule WhenToProcess.Rides.PartitionedRecordStore do
     record = Ecto.Changeset.apply_changes(changeset)
 
     # TODO: Check valid (?)
-    traced_call(record_module, record.uuid, {:insert, record})
+    traced_record_call(record_module, record.uuid, {:insert, record})
   end
 
   @impl Rides.State
@@ -67,7 +67,7 @@ defmodule WhenToProcess.Rides.PartitionedRecordStore do
     record = Ecto.Changeset.apply_changes(changeset)
 
     # TODO: Check valid (?)
-    traced_call(record_module, record.uuid, {:update, record})
+    traced_record_call(record_module, record.uuid, {:update, record})
   end
 
   @impl Rides.GlobalState
@@ -98,7 +98,7 @@ defmodule WhenToProcess.Rides.PartitionedRecordStore do
     |> get_nearby(position, distance, filter_fn, count)
   end
 
-  defp traced_call(record_module, uuid, message) do
+  defp traced_record_call(record_module, uuid, message) do
     traced_call(
       via_name(record_module, uuid),
       message,
