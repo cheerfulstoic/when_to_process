@@ -124,7 +124,7 @@ defmodule WhenToProcess.Rides.PartitionedRecordStore do
     )
   end
 
-  defp child_pids do
+  defp child_pids(record_module) do
     PartitionSupervisor.which_children(supervisor_name(record_module))
     |> Enum.map(fn {_, pid, :worker, [__MODULE__]} ->
       pid
