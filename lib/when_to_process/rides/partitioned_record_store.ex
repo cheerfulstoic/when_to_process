@@ -7,6 +7,7 @@ defmodule WhenToProcess.Rides.PartitionedRecordStore do
   alias WhenToProcess.Rides
 
   @behaviour Rides.State
+  @behaviour Rides.GlobalState
 
   use GenServer
 
@@ -35,8 +36,8 @@ defmodule WhenToProcess.Rides.PartitionedRecordStore do
 
   @impl Rides.State
   def reset(record_module) do
-    PartitionSupervisor.which_children(supervisor_name(record_module))
-    |> Enum.each(fn {_, pid, :worker, [__MODULE__]} ->
+    child_pids(record_module)
+    |> Enum.each(fn pid ->
       GenServer.call(pid, :reset)
     end)
   end
@@ -69,21 +70,65 @@ defmodule WhenToProcess.Rides.PartitionedRecordStore do
     traced_call(record_module, record.uuid, {:update, record})
   end
 
+  @impl Rides.GlobalState
+  def list(record_module) do
+    child_pids(record_module)
+    |> Task.async_stream(fn pid ->
+      traced_call(pid, :list)
+    end)
+    |> Enum.concat()
+  end
+
+  @impl Rides.GlobalState
+  def count(record_module) do
+    child_pids(record_module)
+    |> Task.async_stream(fn pid ->
+      traced_call(pid, :count)
+    end)
+    |> Enum.sum()
+  end
+
+  @impl Rides.GlobalState
+  def list_nearby(record_module, position, distance, filter_fn, count) do
+    child_pids(record_module)
+    |> Task.async_stream(fn pid ->
+      traced_call(pid, {:list_nearby, position, distance, filter_fn, count})
+    end)
+    |> Enum.concat()
+    |> get_nearby(position, distance, filter_fn, count)
+  end
+
   defp traced_call(record_module, uuid, message) do
-    metadata = %{
+    traced_call(
+      via_name(record_module, uuid),
+      message,
+      %{
+        record_module: WhenToProcessWeb.Telemetry.module_to_key(record_module),
+      }
+    )
+  end
+
+  defp traced_call(dest, message, metadata \\ %{}) do
+    metadata = Map.merge(metadata, %{
       implementation_module: WhenToProcessWeb.Telemetry.module_to_key(__MODULE__),
-      record_module: WhenToProcessWeb.Telemetry.module_to_key(record_module),
       message_key: "#{message_key(message)}"
-    }
+    })
 
     :telemetry.span(
       [:when_to_process, :rides, :genserver_call],
       metadata,
       fn ->
-        result = GenServer.call(via_name(record_module, uuid), message)
+        result = GenServer.call(dest, message)
         {result, metadata}
       end
     )
+  end
+
+  defp child_pids do
+    PartitionSupervisor.which_children(supervisor_name(record_module))
+    |> Enum.map(fn {_, pid, :worker, [__MODULE__]} ->
+      pid
+    end)
   end
 
   @impl true
@@ -110,6 +155,49 @@ defmodule WhenToProcess.Rides.PartitionedRecordStore do
   @impl true
   def handle_call({:get, uuid}, _from, records) do
     {:reply, Map.get(records, uuid), records}
+  end
+
+  @impl true
+  def handle_call(:list, _from, records) do
+    {:reply, Map.values(records), records}
+  end
+
+  @impl true
+  def handle_call(:count, _from, records) do
+    {:reply, map_size(records), records}
+  end
+
+  def handle_call({:list_nearby, position, distance, filter_fn, count}, _from, records) do
+    result =
+      records
+      |> Enum.map(fn {_uuid, record} ->
+        record
+      end)
+      |> get_nearby(position, distance, filter_fn, count)
+
+    {:reply, result, records}
+  end
+
+  def get_nearby(records, position, distance, filter_fn, count) do
+    [
+      [latitude_west, longitude_south],
+      [latitude_east, longitude_north]
+    ] = Geocalc.bounding_box(position, distance)
+
+    records
+    |> Enum.filter(fn {_uuid, record} ->
+      record.latitude >= latitude_west &&
+        record.latitude <= latitude_east &&
+        record.longitude >= longitude_south &&
+        record.longitude <= longitude_north
+    end)
+    |> Enum.map(fn {_uuid, record} -> record end)
+    # |> Enum.filter(& &1.ready_for_passengers)
+    |> Enum.filter(filter_fn)
+    |> Enum.sort_by(fn record ->
+      Rides.sort_distance(position, Rides.position(record))
+    end)
+    |> Enum.take(count)
   end
 
   def handle_call(:reset, _from, _records) do
