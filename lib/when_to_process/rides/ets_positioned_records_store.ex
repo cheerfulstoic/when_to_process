@@ -128,7 +128,7 @@ defmodule WhenToProcess.Rides.ETSPositionedRecordsStore do
   end
 
   defp name(record_module) do
-    :"ets_positioned_records_store_for_#{record_module}"
+    :"#{__MODULE__}_for_#{record_module}"
   end
 
   def message_key({key, _}), do: key

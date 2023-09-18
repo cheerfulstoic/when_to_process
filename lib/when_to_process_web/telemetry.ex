@@ -125,16 +125,8 @@ defmodule WhenToProcessWeb.Telemetry do
       last_value("when_to_process.processes.module.bandit_delegating_handler.total"),
       last_value("when_to_process.processes.module.processes_only_driver_server.total"),
       last_value(
-        "when_to_process.processes.process_info.ets_positioned_records_store_for_driver.message_queue_len"
-      ),
-      last_value(
-        "when_to_process.processes.process_info.ets_positioned_records_store_for_passenger.message_queue_len"
-      ),
-      last_value(
-        "when_to_process.processes.process_info.positioned_record_store_for_driver.message_queue_len"
-      ),
-      last_value(
-        "when_to_process.processes.process_info.positioned_record_store_for_passenger.message_queue_len"
+        "when_to_process.processes.process_info.message_queue_len",
+        tags: [:implementation_module, :record_module]
       )
     ]
   end
@@ -159,23 +151,23 @@ defmodule WhenToProcessWeb.Telemetry do
 
       {__MODULE__, :process_info,
        [
-         :"ets_positioned_records_store_for_Elixir.WhenToProcess.Rides.Driver",
-         :ets_positioned_records_store_for_driver
+         WhenToProcess.Rides.ETSPositionedRecordsStore,
+         Elixir.WhenToProcess.Rides.Driver
        ]},
       {__MODULE__, :process_info,
        [
-         :"ets_positioned_records_store_for_Elixir.WhenToProcess.Rides.Passenger",
-         :ets_positioned_records_store_for_passenger
+         WhenToProcess.Rides.ETSPositionedRecordsStore,
+         Elixir.WhenToProcess.Rides.Passenger
        ]},
       {__MODULE__, :process_info,
        [
-         :"positioned_record_store_dynamic_supervisor_for_Elixir.WhenToProcess.Rides.Driver",
-         :positioned_record_store_for_driver
+         WhenToProcess.Rides.PartitionedRecordStore,
+         Elixir.WhenToProcess.Rides.Driver
        ]},
       {__MODULE__, :process_info,
        [
-         :"positioned_record_store_dynamic_supervisor_for_Elixir.WhenToProcess.Rides.Passenger",
-         :positioned_record_store_for_passenger
+         WhenToProcess.Rides.PartitionedRecordStore,
+         Elixir.WhenToProcess.Rides.Passenger
        ]},
       {__MODULE__, :statistics, []}
     ]
@@ -243,7 +235,13 @@ defmodule WhenToProcessWeb.Telemetry do
     )
   end
 
-  def process_info(process_name, telemetry_name) do
+  def process_info(implementation_module, record_module) do
+    metadata = %{
+      implementation_module: module_to_key(implementation_module),
+      record_module: module_to_key(record_module),
+    }
+
+    process_name = :"#{implementation_module}_for_#{record_module}"
     Process.whereis(process_name)
     |> case do
       nil ->
@@ -256,9 +254,9 @@ defmodule WhenToProcessWeb.Telemetry do
         |> case do
           {:message_queue_len, length} ->
             :telemetry.execute(
-              [:when_to_process, :processes, :process_info, telemetry_name],
+              [:when_to_process, :processes, :process_info, :message_queue_len],
               %{message_queue_len: length},
-              %{}
+              metadata
             )
         end
     end

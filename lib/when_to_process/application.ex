@@ -11,7 +11,7 @@ defmodule WhenToProcess.Application do
       [
         # Start the Telemetry supervisor
         WhenToProcessWeb.Telemetry,
-        WhenToProcess.ProcessTelemetry,
+        # WhenToProcess.ProcessTelemetry,
         # Start the Ecto repository
         WhenToProcess.Repo,
         # Start the PubSub system

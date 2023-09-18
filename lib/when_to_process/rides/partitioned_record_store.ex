@@ -26,7 +26,7 @@ defmodule WhenToProcess.Rides.PartitionedRecordStore do
 
   def child_spec(record_module) do
     %{
-      id: record_module,
+      id: name(record_module),
       start: {__MODULE__, :start_link, [record_module]}
     }
   end
@@ -205,9 +205,9 @@ defmodule WhenToProcess.Rides.PartitionedRecordStore do
     {:reply, :ok, %{}}
   end
 
-  # defp name(record_module) do
-  #   :"partitioned_positioned_record_store_for_#{record_module}"
-  # end
+  defp name(record_module) do
+    :"#{__MODULE__}_for_#{record_module}"
+  end
 
   def supervisor_name(record_module) do
     :"partitioned_record_store_for_#{record_module}"
