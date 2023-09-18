@@ -45,7 +45,7 @@ defmodule Test do
       {2, latitude},
       {3, longitude},
       {4,
-        record1
+        record
         |> Map.put(:latitude, latitude)
         |> Map.put(:longitude, longitude)
       }
@@ -54,8 +54,8 @@ defmodule Test do
 end
 
 record1 = Test.new_record()
-record2 = Test.new_record()
-record3 = Test.new_record()
+# record2 = Test.new_record()
+# record3 = Test.new_record()
 
 Benchee.run(
   %{
