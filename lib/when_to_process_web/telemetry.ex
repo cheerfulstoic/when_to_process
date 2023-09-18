@@ -245,10 +245,12 @@ defmodule WhenToProcessWeb.Telemetry do
     Process.whereis(process_name)
     |> case do
       nil ->
+      IO.puts("DIDN'T FIND PROCESS for implementation_module: #{inspect(implementation_module)}, record_module: #{inspect(record_module)}")
         # Should only happen on startup
         nil
 
       pid ->
+      IO.puts("FOUND PROCESS for implementation_module: #{inspect(implementation_module)}, record_module: #{inspect(record_module)}")
         pid
         |> Process.info(:message_queue_len)
         |> case do
