@@ -39,8 +39,11 @@ defmodule WhenToProcess.Rides do
     |> module.changeset_for_insert()
     |> then(fn changeset ->
       state_implementation_modules()
-      |> Enum.map(& &1.insert_changeset(changeset))
+      |> Task.async_stream(& &1.insert_changeset(changeset))
       |> List.last()
+      |> case do
+        {:ok, value} -> value
+      end
     end)
   end
 
@@ -175,10 +178,14 @@ defmodule WhenToProcess.Rides do
     record
     |> schema_mod.changeset(attrs)
     |> then(fn changeset ->
-      Enum.map(state_implementation_modules(), fn module ->
+      state_implementation_modules()
+      |> Task.async_stream(fn module ->
         module.update_changeset(changeset)
       end)
       |> List.last()
+      |> case do
+        {:ok, value} -> value
+      end
     end)
   end
 
