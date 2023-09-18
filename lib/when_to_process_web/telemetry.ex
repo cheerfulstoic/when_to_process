@@ -256,7 +256,7 @@ defmodule WhenToProcessWeb.Telemetry do
         |> case do
           {:message_queue_len, length} ->
             :telemetry.execute(
-              [:when_to_process, :processes, :process_info, :message_queue_len],
+              [:when_to_process, :processes, :process_info],
               %{message_queue_len: length},
               metadata
             )
