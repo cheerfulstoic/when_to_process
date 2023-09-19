@@ -18,6 +18,7 @@ defmodule WhenToProcess.Client.Driver do
     socket =
       config.slipstream_config
       |> connect!()
+      |> assign(:config, config)
       |> assign(:uuid, nil)
       |> assign(:last_bearing, bearing)
       |> assign(:position, start_position)
@@ -35,9 +36,9 @@ defmodule WhenToProcess.Client.Driver do
   def handle_connect(socket) do
     case create_driver() do
       {:ok, uuid} ->
-        send_move()
-        send_change_status()
-        send_adjust_bearing()
+        send_move(socket)
+        send_change_status(socket)
+        send_adjust_bearing(socket)
 
         {:ok,
          socket
@@ -117,7 +118,7 @@ defmodule WhenToProcess.Client.Driver do
            longitude: new_longitude
          }) do
       {:ok, socket} ->
-        send_move()
+        send_move(socket)
 
         {:noreply,
          socket
@@ -133,7 +134,7 @@ defmodule WhenToProcess.Client.Driver do
     # Logger.info("change_status")
     ready_for_passengers = !socket.assigns.ready_for_passengers
 
-    send_change_status()
+    send_change_status(socket)
 
     uuid = socket.assigns.uuid
 
@@ -155,7 +156,7 @@ defmodule WhenToProcess.Client.Driver do
   end
 
   def handle_info(:adjust_bearing, socket) do
-    send_adjust_bearing()
+    send_adjust_bearing(socket)
 
     {:noreply, assign(socket, :last_bearing, WhenToProcess.Locations.random_bearing())}
   end
@@ -177,20 +178,16 @@ defmodule WhenToProcess.Client.Driver do
     end
   end
 
-  @move_delay 16_000
-  @change_status_delay 40_000
-  @adjust_bearing_delay 24_000
-
-  defp send_move do
-    Process.send_after(self(), :move, random_from(@move_delay))
+  defp send_move(socket) do
+    Process.send_after(self(), :move, random_from(socket.assigns.config.move_delay))
   end
 
-  defp send_change_status do
-    Process.send_after(self(), :change_status, random_from(@change_status_delay))
+  defp send_change_status(socket) do
+    Process.send_after(self(), :change_status, random_from(socket.assigns.config.change_status_delay))
   end
 
-  defp send_adjust_bearing do
-    Process.send_after(self(), :adjust_bearing, random_from(@adjust_bearing_delay))
+  defp send_adjust_bearing(socket) do
+    Process.send_after(self(), :adjust_bearing, random_from(socket.assigns.config.adjust_bearing_delay))
   end
 
   defp random_from(delay) do
