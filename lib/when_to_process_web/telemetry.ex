@@ -153,21 +153,20 @@ defmodule WhenToProcessWeb.Telemetry do
           {Bandit.DelegatingHandler, :bandit_delegating_handler},
         ]]
       }
-    ] ++ for
-      implementation_module <- [
+    ] ++ (for implementation_module <- [
         WhenToProcess.Rides.RecordStore,
         WhenToProcess.Rides.PositionedRecordsStore,
         WhenToProcess.Rides.ETSPositionedRecordsStore,
         WhenToProcess.Rides.PartitionedRecordStore
       ],
-      record_module <- [Elixir.WhenToProcess.Rides.Driver, Elixir.WhenToProcess.Rides.Passenger] do
+      record_module <- [WhenToProcess.Rides.Driver, WhenToProcess.Rides.Passenger] do
 
       {__MODULE__, :process_info,
        [
          WhenToProcess.Rides.ETSPositionedRecordsStore,
          Elixir.WhenToProcess.Rides.Driver
        ]}
-   end
+   end)
   end
 
   def record_count(module, telemetry_name) do
