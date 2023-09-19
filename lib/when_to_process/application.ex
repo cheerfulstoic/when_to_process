@@ -7,6 +7,9 @@ defmodule WhenToProcess.Application do
 
   @impl true
   def start(_type, _args) do
+    IO.inspect(System.get("RIDES_GLOBAL_IMPLEMENTATION_MODULE"), label: :RIDES_GLOBAL_IMPLEMENTATION_MODULE)
+    IO.inspect(System.get("RIDES_INDIVIDUAL_IMPLEMENTATION_MODULE"), label: :RIDES_INDIVIDUAL_IMPLEMENTATION_MODULE)
+
     children =
       [
         # Start the Telemetry supervisor
