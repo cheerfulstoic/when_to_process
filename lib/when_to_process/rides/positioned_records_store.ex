@@ -84,9 +84,8 @@ defmodule WhenToProcess.Rides.PositionedRecordsStore do
     )
   end
 
-
   defp name(record_module) do
-    :"positioned_records_store_for_#{record_module}"
+    :"#{__MODULE__}_for_#{record_module}"
   end
 
   def message_key(message) when is_tuple(message), do: elem(message, 0)

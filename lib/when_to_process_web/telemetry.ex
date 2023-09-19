@@ -131,7 +131,12 @@ defmodule WhenToProcessWeb.Telemetry do
     ]
   end
 
-  def module_to_key(module), do: String.replace(Macro.to_string(module), ".", "_")
+  def module_to_key(module) do
+    module
+    |> Macro.to_string()
+    |> String.replace(~r/^(WhenToProcess|WhenToProcessWeb)\./, "")
+    |> String.replace(".", "_")
+  end
 
   defp periodic_measurements do
     [
@@ -147,30 +152,22 @@ defmodule WhenToProcessWeb.Telemetry do
           {:cowboy_clear, :cowboy_clear},
           {Bandit.DelegatingHandler, :bandit_delegating_handler},
         ]]
-      },
+      }
+    ] ++ for
+      implementation_module <- [
+        WhenToProcess.Rides.RecordStore,
+        WhenToProcess.Rides.PositionedRecordsStore,
+        WhenToProcess.Rides.ETSPositionedRecordsStore,
+        WhenToProcess.Rides.PartitionedRecordStore
+      ],
+      record_module <- [Elixir.WhenToProcess.Rides.Driver, Elixir.WhenToProcess.Rides.Passenger] do
 
       {__MODULE__, :process_info,
        [
          WhenToProcess.Rides.ETSPositionedRecordsStore,
          Elixir.WhenToProcess.Rides.Driver
-       ]},
-      {__MODULE__, :process_info,
-       [
-         WhenToProcess.Rides.ETSPositionedRecordsStore,
-         Elixir.WhenToProcess.Rides.Passenger
-       ]},
-      {__MODULE__, :process_info,
-       [
-         WhenToProcess.Rides.PartitionedRecordStore,
-         Elixir.WhenToProcess.Rides.Driver
-       ]},
-      {__MODULE__, :process_info,
-       [
-         WhenToProcess.Rides.PartitionedRecordStore,
-         Elixir.WhenToProcess.Rides.Passenger
-       ]},
-      {__MODULE__, :statistics, []}
-    ]
+       ]}
+   end
   end
 
   def record_count(module, telemetry_name) do
@@ -245,12 +242,10 @@ defmodule WhenToProcessWeb.Telemetry do
     Process.whereis(process_name)
     |> case do
       nil ->
-      IO.puts("DIDN'T FIND PROCESS for implementation_module: #{inspect(implementation_module)}, record_module: #{inspect(record_module)}")
         # Should only happen on startup
         nil
 
       pid ->
-      IO.puts("FOUND PROCESS for implementation_module: #{inspect(implementation_module)}, record_module: #{inspect(record_module)}")
         pid
         |> Process.info(:message_queue_len)
         |> case do
