@@ -38,13 +38,14 @@ defmodule WhenToProcess.Rides do
     attrs
     |> module.changeset_for_insert()
     |> then(fn changeset ->
-      state_implementation_modules()
-      |> Task.async_stream(& &1.insert_changeset(changeset))
-      |> Enum.to_list()
-      |> List.last()
-      |> case do
-        {:ok, value} -> value
-      end
+      results =
+        state_implementation_modules()
+        |> Task.async_stream(& &1.insert_changeset(changeset))
+        |> Enum.to_list()
+        # Deconstruct results from `async_stream`
+        |> Enum.map(fn {:ok, value} -> value end)
+
+      Enum.find(results, & match?({:error, _}, &1)) || List.first(results)
     end)
   end
 
