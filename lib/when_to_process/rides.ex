@@ -59,7 +59,7 @@ defmodule WhenToProcess.Rides do
   end
 
   def get(module, uuid) do
-    IO.inspect(individual_state_implementation_module(), label: :blah).get(module, uuid)
+    individual_state_implementation_module().get(module, uuid)
   end
 
   def reload(record), do: global_state_implementation_module().reload(record)
