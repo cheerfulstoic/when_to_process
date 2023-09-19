@@ -14,7 +14,8 @@ defmodule WhenToProcess.Rides.RecordStore do
     # Taking just the uuid instead of the whole object because if the process restarts
     # we don't want to start off with old data.  We should re-fetch from the global state
     # each time the process gets started/restarted.
-    GenServer.start_link(__MODULE__, {record_module, uuid}, name: name(record_module, uuid))
+    name = name(record_module, uuid)
+    GenServer.start_link(__MODULE__, {record_module, uuid}, id: name, name: name)
   end
 
   @impl Rides.State
@@ -107,7 +108,7 @@ defmodule WhenToProcess.Rides.RecordStore do
   end
 
   def supervisor_name(record_module) do
-    :"positioned_record_store_dynamic_supervisor_for_#{record_module}"
+    :"dynamic_supervisor_for_#{__MODULE__}_for_#{record_module}"
   end
 
   defp name(record_module, uuid) do
