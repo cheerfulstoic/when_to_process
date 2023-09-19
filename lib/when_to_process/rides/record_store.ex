@@ -86,13 +86,17 @@ defmodule WhenToProcess.Rides.RecordStore do
 
   @impl true
   def init({record_module, uuid}) do
-    WhenToProcess.ProcessTelemetry.monitor(self(), __MODULE__)
+    # WhenToProcess.ProcessTelemetry.monitor(self(), __MODULE__)
 
-    record = Rides._global_state_implementation_module().get(record_module, uuid)
+    case Rides._global_state_implementation_module().get(record_module, uuid) do
+      nil ->
+        init({record_module, uuid})
 
-    WhenToProcess.PubSub.broadcast_record_create(record)
+      record ->
+        WhenToProcess.PubSub.broadcast_record_create(record)
 
-    {:ok, record}
+      {:ok, record}
+    end
   end
 
   @impl true
